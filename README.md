@@ -18,6 +18,6 @@ Send Private Message<br>
 Thread Creation<br>
 Post Reply<br>
 Post Editing<br>
-
-<b>Usage Example:</b>
-Check out https://github.com/apocist/eMafiaServer for it's primary intentional usage.
+<br>
+<b>Usage Example:</b><br>
+Check out https://github.com/apocist/eMafiaServer for it's primary intentional usage.<br>
