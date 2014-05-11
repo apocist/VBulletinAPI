@@ -44,18 +44,103 @@ public final class VBulletinAPI extends Thread{
 		}
 	}
 	final public static double VERSION = 0.1;
+	/**
+	 * Checks if a String may be translated as an int
+	 * @param s String to check
+	 */
+	private static boolean isInteger(String s){
+		if(s != null && s != "")return isInteger(s,10);
+		return false;
+	}
+	private static boolean isInteger(String s, int radix){
+		if(s.isEmpty()) return false;
+		for(int i = 0; i < s.length(); i++) {
+			if(i == 0 && s.charAt(i) == '-') {
+				if(s.length() == 1) return false;
+				continue;
+			}
+			if(Character.digit(s.charAt(i),radix) < 0) return false;
+		}
+		return true;
+	}
+	/**
+	 * Encrypts a String to MD5
+	 * @param md5 String
+	 * @return String encrypted to MD5
+	 */
+	private static final String MD5(String str) {
+		try {
+			java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+			final byte[] array = md.digest(str.getBytes("UTF-8"));
+			StringBuffer sb = new StringBuffer();
+			for (int i = 0; i < array.length; ++i) {
+				sb.append(Integer.toHexString((array[i] & 0xFF) | 0x100).substring(1,3));
+			}
+			return sb.toString();
+		}
+		catch (java.security.NoSuchAlgorithmException e) {}
+		catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	private static void queryAddCharEntity(Integer aIdx, StringBuilder aBuilder){
+		String padding = "";
+		if( aIdx <= 9 ){
+		padding = "00";
+		}
+		else if( aIdx <= 99 ){
+		padding = "0";
+		}
+		else {
+		//no prefix
+		}
+		String number = padding + aIdx.toString();
+		aBuilder.append("&#" + number + ";");
+	}
+	private static String querySafeString(String aText){
+		final StringBuilder result = new StringBuilder();
+		if(aText != null){
+			final StringCharacterIterator iterator = new StringCharacterIterator(aText);
+			char character =  iterator.current();
+			while (character != CharacterIterator.DONE ){
+				if (character == '"') {
+					result.append("&quot;");
+				}
+				else if (character == '\"') {
+					result.append("&quot;");
+				}
+				else if (character == '\t') {
+					queryAddCharEntity(9, result);
+				}
+				else if (character == '\'') {
+					queryAddCharEntity(39, result);
+				}
+				else if (character == '\\') {
+					queryAddCharEntity(92, result);
+				}
+				else {
+					//the char is not a special one
+					//add it to the result as is
+					result.append(character);
+				}
+				character = iterator.next();
+			}
+		}
+		return result.toString();
+	}
 	private boolean CONNECTED = false;
 	private boolean LOGGEDIN = false;
 	private String clientname;
 	private String clientversion;
 	private String apikey;
 	private String apiURL;
+
 	private String apiAccessToken;
 	private String apiClientID;
 	private String secret;
 	private String username;
 	private String password;
-
 	/**
 	 * Instantiates a new vBulletin API wrapper. This will initialise the API
 	 * connection as well, with OS name and version pulled from property files
@@ -198,21 +283,24 @@ public final class VBulletinAPI extends Thread{
 		return map;
 	}
 	/**
-	 * Attempts to login no more than 3 times
+	 * Detects the most common errors and throws them if exist
+	 * @param errorMsg
+	 * @throws InvalidAPISignature
+	 * @throws NoPermissionLoggedout
+	 * @throws NoPermissionLoggedin
+	 * @throws InvalidAccessToken
+	 * @throws APISocketTimeoutException
+	 * @throws APIIOException
 	 */
-	public boolean forum_Login() throws InvalidAPISignature, InvalidAccessToken, VBulletinAPIException{
-		String errorMsg = "";
-		for(int i = 0;i < 3;i++){
-			errorMsg = parseResponse(forum_LoginDirect());if(errorMsg == null){errorMsg = "";}
-			if(errorMsg.equals("redirect_login")){//if login is succesful
-				setConnected(true);
-				setLoggedin(true);
-				return true;
-			}
-		}
-		setLoggedin(false);
+	private void errorsCommon(String errorMsg) throws InvalidAPISignature, NoPermissionLoggedout, NoPermissionLoggedin, InvalidAccessToken, APISocketTimeoutException, APIIOException{
 		if(errorMsg.equals("invalid_api_signature")){
 			throw new InvalidAPISignature();
+		}
+		else if(errorMsg.equals("nopermission_loggedout")){
+			throw new NoPermissionLoggedout();
+		}
+		else if(errorMsg.equals("nopermission_loggedin")){
+			throw new NoPermissionLoggedin();
 		}
 		else if(errorMsg.equals("invalid_accesstoken")){
 			throw new InvalidAccessToken();
@@ -223,13 +311,29 @@ public final class VBulletinAPI extends Thread{
 		else if(errorMsg.equals("IOException")){
 			throw new APIIOException();
 		}
-		throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
-		/*if(!errorMsg.equals("redirect_login")){//login failed
-			Base.Console.warning("SC2Mafia Forum API unable to login! Registration is disabled. Reason: '"+errorMsg+"'");
-			setConnected(false);
-		}*/
-
-
+	}
+	/**
+	 * Attempts to login no more than 3 times
+	 */
+	public boolean forum_Login() throws BadCredentials, VBulletinAPIException{
+		if(IsConnected()){
+			String errorMsg = "";
+			for(int i = 0;i < 3;i++){
+				errorMsg = parseResponse(forum_LoginDirect());if(errorMsg == null){errorMsg = "";}
+				if(errorMsg.equals("redirect_login")){//if login is succesful
+					setConnected(true);
+					setLoggedin(true);
+					return true;
+				}
+			}
+			setLoggedin(false);
+			if(errorMsg.equals("badlogin_strikes_passthru")){
+				throw new BadCredentials();
+			}
+			errorsCommon(errorMsg);
+			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
+		}
+		throw new NoConnectionException();
 	}
 	/**Login using the preset credientals*/
 	private LinkedTreeMap<String, Object> forum_LoginDirect(){
@@ -293,13 +397,13 @@ public final class VBulletinAPI extends Thread{
 	/**
 	 * Returns if connected into vBulletin forum
 	 */
-	public boolean getConnected(){
+	public boolean IsConnected(){
 		return CONNECTED;
 	}
 	/**
 	 * Returns if logged into vBulletin forum
 	 */
-	public boolean getLoggedin(){
+	public boolean IsLoggedin(){
 		return LOGGEDIN;
 	}
 	/**
@@ -361,46 +465,6 @@ public final class VBulletinAPI extends Thread{
 			}
 		}
 		return false;
-	}
-	/**
-	 * Checks if a String may be translated as an int
-	 * @param s String to check
-	 */
-	private static boolean isInteger(String s){
-		if(s != null && s != "")return isInteger(s,10);
-		return false;
-	}
-	private static boolean isInteger(String s, int radix){
-		if(s.isEmpty()) return false;
-		for(int i = 0; i < s.length(); i++) {
-			if(i == 0 && s.charAt(i) == '-') {
-				if(s.length() == 1) return false;
-				continue;
-			}
-			if(Character.digit(s.charAt(i),radix) < 0) return false;
-		}
-		return true;
-	}
-	/**
-	 * Encrypts a String to MD5
-	 * @param md5 String
-	 * @return String encrypted to MD5
-	 */
-	private static final String MD5(String str) {
-		try {
-			java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-			final byte[] array = md.digest(str.getBytes("UTF-8"));
-			StringBuffer sb = new StringBuffer();
-			for (int i = 0; i < array.length; ++i) {
-				sb.append(Integer.toHexString((array[i] & 0xFF) | 0x100).substring(1,3));
-			}
-			return sb.toString();
-		}
-		catch (java.security.NoSuchAlgorithmException e) {}
-		catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-		}
-		return null;
 	}
 	/**Parses response, designed specifically for gathering the list of all messages. Messages only have the header at this point, the actual message is not included
 	 * @param response
@@ -646,102 +710,83 @@ public final class VBulletinAPI extends Thread{
 	/**Attempts to empty the Game Master's PM Inbox
 	 * @return true on success
 	 */
-	public boolean pm_EmptyInbox() throws InvalidAPISignature, NoPermissionLoggedout, InvalidAccessToken, VBulletinAPIException{
+	public boolean pm_EmptyInbox() throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
 		return  pm_EmptyInbox(0);
 	}
 	/**Attempts to empty the Game Master's PM Inbox
 	 * @return true on success
 	 */
-	private boolean pm_EmptyInbox(int loop) throws InvalidAPISignature, NoPermissionLoggedout, InvalidAccessToken, VBulletinAPIException{
-		String errorMsg = null;
-		loop++;
-		HashMap<String, String> params = new HashMap<String, String>();//150885
-		//params.put("forumid", forumid);
-		params.put("dateline", "9876543210");
-		params.put("folderid", "0");
-		errorMsg = parseResponse(callMethod("private_confirmemptyfolder", params, true));
-		if(loop < 5){//no inifinite loop by user
-			if(errorMsg != null){
-				if(errorMsg.equals("pm_messagesdeleted")){//success
-					return true;
-				}
-				else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
-					forum_Login();
-					if(getLoggedin()){
+	private boolean pm_EmptyInbox(int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		if(IsConnected()){
+			String errorMsg = null;
+			loop++;
+			HashMap<String, String> params = new HashMap<String, String>();//150885
+			params.put("dateline", "9876543210");
+			params.put("folderid", "0");
+			errorMsg = parseResponse(callMethod("private_confirmemptyfolder", params, true));
+			if(loop < 4){//no inifinite loop by user
+				if(errorMsg != null){
+					if(errorMsg.equals("pm_messagesdeleted")){//success
+						return true;
+					}
+					else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
+						forum_Login();
+						if(IsLoggedin()){
+							return pm_EmptyInbox(loop);
+						}
+					}
+					else if(errorMsg.equals("invalid_api_signature")){
 						return pm_EmptyInbox(loop);
 					}
 				}
-				else if(errorMsg.equals("invalid_api_signature")){
-					return pm_EmptyInbox(loop);
-				}
 			}
+			errorsCommon(errorMsg);
+			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
 		}
-		if(errorMsg.equals("invalid_api_signature")){
-			throw new InvalidAPISignature();
-		}
-		else if(errorMsg.equals("nopermission_loggedout")){
-			throw new NoPermissionLoggedout();
-		}
-		else if(errorMsg.equals("invalid_accesstoken")){
-			throw new InvalidAccessToken();
-		}
-		//Base.Console.warning("SC2Mafia Forum API unable empty PM Inbox! Reason: '"+errorMsg+"'");
-		throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
+		throw new NoConnectionException();
 	}
 	/**Returns list of PMs in the inbox
 	 * @return
 	 */
-	public ArrayList<Message> pm_ListPMs() throws InvalidAPISignature, NoPermissionLoggedout, InvalidAccessToken, VBulletinAPIException{
+	public ArrayList<Message> pm_ListPMs() throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
 		return pm_ListPMs(0);
 	}
 	/**Returns list of PMs in the inbox
 	 * @return
 	 */
-	private ArrayList<Message> pm_ListPMs(int loop) throws InvalidAPISignature, NoPermissionLoggedout, InvalidAccessToken, VBulletinAPIException{//TODO need to reserve to order to show oldest first
-		String errorMsg;
-		HashMap<String, String> params = new HashMap<String, String>();
-		LinkedTreeMap<String,Object> linkmap = callMethod("private_messagelist", params, true);
-		errorMsg = parseResponse(linkmap);
-		loop++;
-		if(loop < 5 ){
-			if(errorMsg != null){
-				if(errorMsg.equals("totalmessages")){//is the inbox
-					ArrayList<Message> msgList = parseMessages(linkmap);
-					for(Message msg:msgList){
-						//try {
-							msg.message = pm_ViewPM(msg.pmid);
-						//}catch (VBulletinAPIException e) {e.printStackTrace();}
+	private ArrayList<Message> pm_ListPMs(int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{//TODO need to reserve to order to show oldest first
+		if(IsConnected()){
+			String errorMsg;
+			HashMap<String, String> params = new HashMap<String, String>();
+			LinkedTreeMap<String,Object> linkmap = callMethod("private_messagelist", params, true);
+			errorMsg = parseResponse(linkmap);
+			loop++;
+			if(loop < 4){
+				if(errorMsg != null){
+					if(errorMsg.equals("totalmessages")){//is the inbox
+						ArrayList<Message> msgList = parseMessages(linkmap);
+						for(Message msg:msgList){
+							//try {
+								msg.message = pm_ViewPM(msg.pmid);
+							//}catch (VBulletinAPIException e) {e.printStackTrace();}
+						}
+						return msgList;
 					}
-					return msgList;
-				}
-				else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
-					forum_Login();
-					if(getLoggedin()){
+					else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
+						forum_Login();
+						if(IsLoggedin()){
+							return pm_ListPMs(loop);
+						}
+					}
+					else if(errorMsg.equals("invalid_api_signature")){
 						return pm_ListPMs(loop);
 					}
 				}
-				else if(errorMsg.equals("invalid_api_signature")){
-					return pm_ListPMs(loop);
-				}
 			}
+			errorsCommon(errorMsg);
+			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
 		}
-		if(errorMsg.equals("invalid_api_signature")){
-			throw new InvalidAPISignature();
-		}
-		else if(errorMsg.equals("nopermission_loggedout")){
-			throw new NoPermissionLoggedout();
-		}
-		else if(errorMsg.equals("invalid_accesstoken")){
-			throw new InvalidAccessToken();
-		}
-		else if(errorMsg.equals("SocketTimeoutException")){
-			throw new APISocketTimeoutException();
-		}
-		else if(errorMsg.equals("IOException")){
-			throw new APIIOException();
-		}
-		//Base.Console.warning("SC2Mafia Forum API unable view messages! Reason: '"+errorMsg+"'");
-		throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
+		throw new NoConnectionException();
 	}
 	/**Sends a message to the 'user' using the saved Forum User Proxy(should be eMafia Game Master)
 	 * @param user
@@ -749,7 +794,7 @@ public final class VBulletinAPI extends Thread{
 	 * @param message
 	 * @return "pm_messagesent" on success
 	 */
-	public boolean pm_SendNew(String user,String title,String message) throws PMRecipTurnedOff, PMRecipientsNotFound, InvalidAPISignature, NoPermissionLoggedout, InvalidAccessToken, VBulletinAPIException{
+	public boolean pm_SendNew(String user,String title,String message) throws PMRecipTurnedOff, PMRecipientsNotFound, NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
 		return pm_SendNew( user, title, message, 0);
 	}
 	/**Sends a message to the 'user' using the saved Forum User Proxy(should be eMafia Game Master)
@@ -759,62 +804,49 @@ public final class VBulletinAPI extends Thread{
 	 * @param message
 	 * @return "pm_messagesent" on success
 	 */
-	private boolean pm_SendNew(String user,String title,String message, int loop) throws PMRecipTurnedOff, PMRecipientsNotFound, InvalidAPISignature, NoPermissionLoggedout, InvalidAccessToken, VBulletinAPIException{
-		loop++;
-		String errorMsg;
-		HashMap<String, String> params = new HashMap<String, String>();
-		params.put("title", title);
-		params.put("message", message);
-		params.put("recipients", user);
-		params.put("signature", "1");
-		errorMsg = parseResponse(callMethod("private_insertpm", params, true));
-		if(loop < 5){//no inifinite loop by user
-			if(errorMsg != null){
-				if(errorMsg.equals("pm_messagesent")){
-					return true;
-				}
-				else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")||errorMsg.equals("invalid_api_signature")){
-					forum_Login();
-					if(getLoggedin()){
-						return pm_SendNew(user, title, message,loop);
+	private boolean pm_SendNew(String user,String title,String message, int loop) throws PMRecipTurnedOff, PMRecipientsNotFound, NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		if(IsConnected()){
+			loop++;
+			String errorMsg;
+			HashMap<String, String> params = new HashMap<String, String>();
+			params.put("title", title);
+			params.put("message", message);
+			params.put("recipients", user);
+			params.put("signature", "1");
+			errorMsg = parseResponse(callMethod("private_insertpm", params, true));
+			if(loop < 4){//no inifinite loop by user
+				if(errorMsg != null){
+					if(errorMsg.equals("pm_messagesent")){
+						return true;
 					}
-					//return errorMsg;
-				}
-				else if(errorMsg.equals("invalid_api_signature")){
-					return pm_SendNew( user, title, message,loop);
+					else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")||errorMsg.equals("invalid_api_signature")){
+						forum_Login();
+						if(IsLoggedin()){
+							return pm_SendNew(user, title, message,loop);
+						}
+						//return errorMsg;
+					}
+					else if(errorMsg.equals("invalid_api_signature")){
+						return pm_SendNew( user, title, message,loop);
+					}
 				}
 			}
+			if(errorMsg.equals("pmrecipturnedoff")){
+				throw new PMRecipTurnedOff();
+			}
+			else if(errorMsg.equals("pmrecipientsnotfound")){
+				throw new PMRecipientsNotFound();
+			}
+			errorsCommon(errorMsg);
+			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
 		}
-		if(errorMsg.equals("invalid_api_signature")){
-			throw new InvalidAPISignature();
-		}
-		else if(errorMsg.equals("nopermission_loggedout")){
-			throw new NoPermissionLoggedout();
-		}
-		else if(errorMsg.equals("invalid_accesstoken")){
-			throw new InvalidAccessToken();
-		}
-		else if(errorMsg.equals("pmrecipturnedoff")){
-			throw new PMRecipTurnedOff();
-		}
-		else if(errorMsg.equals("pmrecipientsnotfound")){
-			throw new PMRecipientsNotFound();
-		}
-		else if(errorMsg.equals("SocketTimeoutException")){
-			throw new APISocketTimeoutException();
-		}
-		else if(errorMsg.equals("IOException")){
-			throw new APIIOException();
-		}
-		//Base.Console.warning("SC2Mafia Forum API unable send message! Reason: '"+errorMsg+"'");
-		throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
-		//return errorMsg;
+		throw new NoConnectionException();
 	}
 	/**Grabs the message from the PM specified by the pmID
 	 * @param pmId
 	 * @return message text as String
 	 */
-	public String pm_ViewPM(String pmId) throws InvalidAPISignature, NoPermissionLoggedout, InvalidAccessToken, VBulletinAPIException{
+	public String pm_ViewPM(String pmId) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
 		return pm_ViewPM(pmId, 0);
 	}
 	/**Grabs the message from the PM specified by the pmID
@@ -822,54 +854,42 @@ public final class VBulletinAPI extends Thread{
 	 * @param loop increasing int to prevent inifinite loops
 	 * @return message text as String
 	 */
-	private String pm_ViewPM(String pmId, int loop) throws InvalidAPISignature, NoPermissionLoggedout, InvalidAccessToken, VBulletinAPIException{
-		String errorMsg = null;
-		loop++;
-		if(pmId != null){
-			HashMap<String, String> params = new HashMap<String, String>();
-			params.put("pmid", pmId);
-			errorMsg = parseResponse(callMethod("private_showpm", params, true));
-			if(loop < 5){//no inifinite loop by user
-				if(errorMsg != null){
-					if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
-						forum_Login();
-						if(getLoggedin()){
+	private String pm_ViewPM(String pmId, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		if(IsConnected()){
+			String errorMsg = null;
+			loop++;
+			if(pmId != null){
+				HashMap<String, String> params = new HashMap<String, String>();
+				params.put("pmid", pmId);
+				errorMsg = parseResponse(callMethod("private_showpm", params, true));
+				if(loop < 4){//no inifinite loop by user
+					if(errorMsg != null){
+						if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
+							forum_Login();
+							if(IsLoggedin()){
+								return pm_ViewPM(pmId, loop);
+							}
+						}
+						else if(errorMsg.equals("invalid_api_signature")){
 							return pm_ViewPM(pmId, loop);
 						}
-					}
-					else if(errorMsg.equals("invalid_api_signature")){
-						return pm_ViewPM(pmId, loop);
-					}
-					else{//success
-						return errorMsg;
+						else{//success
+							return errorMsg;
+						}
 					}
 				}
+				errorsCommon(errorMsg);
 			}
-			if(errorMsg.equals("invalid_api_signature")){
-				throw new InvalidAPISignature();
-			}
-			else if(errorMsg.equals("nopermission_loggedout")){
-				throw new NoPermissionLoggedout();
-			}
-			else if(errorMsg.equals("invalid_accesstoken")){
-				throw new InvalidAccessToken();
-			}
-			else if(errorMsg.equals("SocketTimeoutException")){
-				throw new APISocketTimeoutException();
-			}
-			else if(errorMsg.equals("IOException")){
-				throw new APIIOException();
-			}
+			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
 		}
-		throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
-		//return errorMsg;
+		throw new NoConnectionException();
 	}
 	/**Attempts to edit a post based on the post id
 	 * @param postid
 	 * @param message
 	 * @return true on successs
 	 */
-	public boolean post_Edit(int postid,String message) throws InvalidAPISignature, NoPermissionLoggedout, InvalidAccessToken, VBulletinAPIException{
+	public boolean post_Edit(int postid,String message) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
 		return post_Edit(""+postid, message);
 	}
 	/**Attempts to edit a post based on the post id
@@ -878,7 +898,7 @@ public final class VBulletinAPI extends Thread{
 	 * @return true on successs
 	 * @throws VBulletinAPIException
 	 */
-	public boolean post_Edit(String postid,String message) throws InvalidAPISignature, NoPermissionLoggedout, InvalidAccessToken, VBulletinAPIException{
+	public boolean post_Edit(String postid,String message) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
 		return post_Edit(postid, message, 0);
 	}
 	/**Attempts to edit a post based on the post id
@@ -887,54 +907,42 @@ public final class VBulletinAPI extends Thread{
 	 * @return true on successs
 	 * @throws VBulletinAPIException
 	 */
-	private boolean post_Edit(String postid,String message, int loop) throws InvalidAPISignature, NoPermissionLoggedout, InvalidAccessToken, VBulletinAPIException{
-		String errorMsg;
-		loop++;
-		HashMap<String, String> params = new HashMap<String, String>();
-		params.put("postid", postid);
-		params.put("message", message);
-		params.put("signature", "1");
-		errorMsg = parseResponse(callMethod("editpost_updatepost", params, true));
-		if(loop < 5){
-			if(errorMsg != null){
-				if(errorMsg.equals("redirect_editthanks")){//success
-					return true;
-				}
-				else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
-					forum_Login();
-					if(getLoggedin()){
+	private boolean post_Edit(String postid,String message, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		if(IsConnected()){
+			String errorMsg;
+			loop++;
+			HashMap<String, String> params = new HashMap<String, String>();
+			params.put("postid", postid);
+			params.put("message", message);
+			params.put("signature", "1");
+			errorMsg = parseResponse(callMethod("editpost_updatepost", params, true));
+			if(loop < 4){
+				if(errorMsg != null){
+					if(errorMsg.equals("redirect_editthanks")){//success
+						return true;
+					}
+					else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
+						forum_Login();
+						if(IsLoggedin()){
+							return post_Edit(postid, message, loop);
+						}
+					}
+					else if(errorMsg.equals("invalid_api_signature")){
 						return post_Edit(postid, message, loop);
 					}
 				}
-				else if(errorMsg.equals("invalid_api_signature")){
-					return post_Edit(postid, message, loop);
-				}
 			}
+			errorsCommon(errorMsg);
+			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
 		}
-		if(errorMsg.equals("invalid_api_signature")){
-			throw new InvalidAPISignature();
-		}
-		else if(errorMsg.equals("nopermission_loggedout")){
-			throw new NoPermissionLoggedout();
-		}
-		else if(errorMsg.equals("invalid_accesstoken")){
-			throw new InvalidAccessToken();
-		}
-		else if(errorMsg.equals("SocketTimeoutException")){
-			throw new APISocketTimeoutException();
-		}
-		else if(errorMsg.equals("IOException")){
-			throw new APIIOException();
-		}
-		//Base.Console.warning("SC2Mafia Forum API unable edit post! Reason: '"+errorMsg+"'");
-		throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
+		throw new NoConnectionException();
 	}
 	/**Attempts to post a new reply in said Thread
 	 * @param threadid
 	 * @param message
 	 * @return int[0] = threadid / int[1] = postid
 	 */
-	public int[] post_New(int threadid,String message) throws InvalidAPISignature, NoPermissionLoggedout, InvalidAccessToken, VBulletinAPIException{
+	public int[] post_New(int threadid,String message) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
 		return post_New(""+threadid, message);
 	}
 	/**Attempts to post a new reply in said Thread
@@ -942,7 +950,7 @@ public final class VBulletinAPI extends Thread{
 	 * @param message
 	 * @return int[0] = threadid / int[1] = postid
 	 */
-	public int[] post_New(String threadid,String message) throws InvalidAPISignature, NoPermissionLoggedout, InvalidAccessToken, VBulletinAPIException{
+	public int[] post_New(String threadid,String message) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
 		return post_New(threadid, message, 0);
 	}
 	/**Attempts to post a new reply in said Thread
@@ -951,103 +959,46 @@ public final class VBulletinAPI extends Thread{
 	 * @return int[0] = threadid / int[1] = postid
 	 * @throws VBulletinAPIException
 	 */
-	private int[] post_New(String threadid,String message, int loop) throws InvalidAPISignature, NoPermissionLoggedout, InvalidAccessToken, VBulletinAPIException{
-		loop++;
-		String errorMsg;
-		HashMap<String, String> params = new HashMap<String, String>();
-		params.put("threadid", threadid);
-		params.put("message", message);
-		params.put("signature", "1");
-		errorMsg = parseResponse(callMethod("newreply_postreply", params, true));
-		if(loop < 5){
-			if(errorMsg != null){
-				if(isInteger(errorMsg.substring(0, 1))){//success
-					if(errorMsg.contains(" ")){
-						String[] ids = errorMsg.split(" ");
-						int[] theReturn = new int[2];
-						if(isInteger(ids[0])){
-							theReturn[0] = (Integer.parseInt(ids[0]));
+	private int[] post_New(String threadid,String message, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		if(IsConnected()){
+			loop++;
+			String errorMsg;
+			HashMap<String, String> params = new HashMap<String, String>();
+			params.put("threadid", threadid);
+			params.put("message", message);
+			params.put("signature", "1");
+			errorMsg = parseResponse(callMethod("newreply_postreply", params, true));
+			if(loop < 4){
+				if(errorMsg != null){
+					if(isInteger(errorMsg.substring(0, 1))){//success
+						if(errorMsg.contains(" ")){
+							String[] ids = errorMsg.split(" ");
+							ids[1] = ids[1].substring(0, ids[1].length() - 2);
+							int[] theReturn = new int[2];
+							if(isInteger(ids[0])){
+								theReturn[0] = (Integer.parseInt(ids[0]));
+							}
+							if(isInteger(ids[1])){
+								theReturn[1] = (Integer.parseInt(ids[1]));
+							}
+							return theReturn;
 						}
-						if(isInteger(ids[1])){
-							theReturn[1] = (Integer.parseInt(ids[1]));
-						}
-						return theReturn;
 					}
-				}
-				else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
-					forum_Login();
-					if(getConnected()){
+					else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
+						forum_Login();
+						if(IsConnected()){
+							return post_New(threadid, message, loop);
+						}
+					}
+					else if(errorMsg.equals("invalid_api_signature")){
 						return post_New(threadid, message, loop);
 					}
 				}
-				else if(errorMsg.equals("invalid_api_signature")){
-					return post_New(threadid, message, loop);
-				}
 			}
+			errorsCommon(errorMsg);
+			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
 		}
-		if(errorMsg.equals("invalid_api_signature")){
-			throw new InvalidAPISignature();
-		}
-		else if(errorMsg.equals("nopermission_loggedout")){
-			throw new NoPermissionLoggedout();
-		}
-		else if(errorMsg.equals("invalid_accesstoken")){
-			throw new InvalidAccessToken();
-		}
-		else if(errorMsg.equals("SocketTimeoutException")){
-			throw new APISocketTimeoutException();
-		}
-		else if(errorMsg.equals("IOException")){
-			throw new APIIOException();
-		}
-		//Base.Console.warning("SC2Mafia Forum API unable post reply! Reason: '"+errorMsg+"'");
-		throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
-		//return errorMsg;
-	}
-	private static String querySafeString(String aText){
-		final StringBuilder result = new StringBuilder();
-		if(aText != null){
-			final StringCharacterIterator iterator = new StringCharacterIterator(aText);
-			char character =  iterator.current();
-			while (character != CharacterIterator.DONE ){
-				if (character == '"') {
-					result.append("&quot;");
-				}
-				else if (character == '\"') {
-					result.append("&quot;");
-				}
-				else if (character == '\t') {
-					queryAddCharEntity(9, result);
-				}
-				else if (character == '\'') {
-					queryAddCharEntity(39, result);
-				}
-				else if (character == '\\') {
-					queryAddCharEntity(92, result);
-				}
-				else {
-					//the char is not a special one
-					//add it to the result as is
-					result.append(character);
-				}
-				character = iterator.next();
-			}
-		}
-		return result.toString();
-	}
-	private static void queryAddCharEntity(Integer aIdx, StringBuilder aBuilder){
-		String padding = "";
-		if( aIdx <= 9 ){
-		padding = "00";
-		}
-		else if( aIdx <= 99 ){
-		padding = "0";
-		}
-		else {
-		//no prefix
-		}
-		String number = padding + aIdx.toString();
-		aBuilder.append("&#" + number + ";");
+		throw new NoConnectionException();
 	}
 	public void run(){
 		Properties props = System.getProperties();
@@ -1138,6 +1089,64 @@ public final class VBulletinAPI extends Thread{
 	public void setUsername(String user) {
 		this.username = user;
 	}
+	/**Attempts to close a Thread in the forum
+	 * @param threadid
+	 * @return true on success
+	 * @throws NoPermissionLoggedout
+	 * @throws NoPermissionLoggedout
+	 * @throws VBulletinAPIException
+	 */
+	public boolean thread_Close(int threadid) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		return thread_Close(""+threadid);
+	}
+	/**Attempts to close a Thread in the forum
+	 * @param threadid
+	 * @return true on success
+	 * @throws NoPermissionLoggedout
+	 * @throws NoPermissionLoggedout
+	 * @throws VBulletinAPIException
+	 */
+	public boolean thread_Close(String threadid) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		return thread_Close(threadid, 0);
+	}
+	/**Attempts to close a Thread in the forum
+	 * @param threadid
+	 * @param loop
+	 * @return true on success
+	 * @throws NoPermissionLoggedout
+	 * @throws NoPermissionLoggedout
+	 * @throws VBulletinAPIException
+	 */
+	private boolean thread_Close(String threadid, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		if(IsConnected()){
+			String errorMsg = null;
+			loop++;
+			HashMap<String, String> params = new HashMap<String, String>();
+			params.put("threadid", threadid);
+			errorMsg = parseResponse(callMethod("inlinemod_close", params, true));
+			if(loop < 4){//no inifinite loop by user
+				if(errorMsg != null){
+					if(errorMsg.length() > 0){
+						if(errorMsg.equals("something...need success")){//success//TODO need the success result....
+							return true;
+						}
+						else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
+							forum_Login();
+							if(IsLoggedin()){
+								return thread_Close(threadid, loop);
+							}
+						}
+						else if(errorMsg.equals("invalid_api_signature")){
+							return thread_Close(threadid, loop);
+						}
+					}
+				}
+			}
+			errorsCommon(errorMsg);
+			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
+		}
+		throw new NoConnectionException();
+	}
 	/**Attempts to post a new Thread in the forum, returns the posted Thread id and Post id for later use.
 	 * @param forumid
 	 * @param subject
@@ -1145,7 +1154,7 @@ public final class VBulletinAPI extends Thread{
 	 * @return int[0] = threadid int[1] = postid
 	 * @throws VBulletinAPIException
 	 */
-	public int[] thread_New(int forumid,String subject,String message) throws InvalidAPISignature, NoPermissionLoggedout, InvalidAccessToken, VBulletinAPIException{
+	public int[] thread_New(int forumid,String subject,String message) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
 		return thread_New(""+forumid,subject,message);
 	}
 	/**Attempts to post a new Thread in the forum, returns the posted Thread id and Post id for later use.
@@ -1155,7 +1164,7 @@ public final class VBulletinAPI extends Thread{
 	 * @return int[0] = threadid int[1] = postid
 	 * @throws VBulletinAPIException
 	 */
-	public int[] thread_New(String forumid,String subject,String message) throws InvalidAPISignature, NoPermissionLoggedout, InvalidAccessToken, VBulletinAPIException{
+	public int[] thread_New(String forumid,String subject,String message) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
 		return thread_New(forumid,subject,message, 0);
 	}
 	/**Attempts to post a new Thread in the forum, returns the posted Thread id and Post id for later use.
@@ -1165,60 +1174,106 @@ public final class VBulletinAPI extends Thread{
 	 * @return int[0] = threadid / int[1] = postid
 	 * @throws VBulletinAPIException
 	 */
-	private int[] thread_New(String forumid,String subject,String message, int loop) throws InvalidAPISignature, NoPermissionLoggedout, InvalidAccessToken, VBulletinAPIException{
-		String errorMsg = null;
-		loop++;
-		HashMap<String, String> params = new HashMap<String, String>();
-		params.put("forumid", forumid);
-		params.put("subject", subject);
-		params.put("message", message);
-		params.put("signature", "1");
-		errorMsg = parseResponse(callMethod("newthread_postthread", params, true));
-		if(loop < 5){//no inifinite loop by user
-			if(errorMsg != null){
-				if(errorMsg.length() > 0){
-					if(isInteger(errorMsg.substring(0, 1))){//success
-						if(errorMsg.contains(" ")){
-							String[] ids = errorMsg.split(" ");
-							int[] theReturn = new int[2];
-							if(isInteger(ids[0])){
-								theReturn[0] = (Integer.parseInt(ids[0]));
+	private int[] thread_New(String forumid,String subject,String message, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		if(IsConnected()){
+			String errorMsg = null;
+			loop++;
+			HashMap<String, String> params = new HashMap<String, String>();
+			params.put("forumid", forumid);
+			params.put("subject", subject);
+			params.put("message", message);
+			params.put("signature", "1");
+			errorMsg = parseResponse(callMethod("newthread_postthread", params, true));
+			if(loop < 4){//no inifinite loop by user
+				if(errorMsg != null){
+					if(errorMsg.length() > 0){
+						if(isInteger(errorMsg.substring(0, 1))){//success
+							if(errorMsg.contains(" ")){
+								String[] ids = errorMsg.split(" ");
+								ids[1] = ids[1].substring(0, ids[1].length() - 2);
+								int[] theReturn = new int[2];
+								if(isInteger(ids[0])){
+									theReturn[0] = (Integer.parseInt(ids[0]));
+								}
+								if(isInteger(ids[1])){
+									theReturn[1] = (Integer.parseInt(ids[1]));
+								}
+								return theReturn;
 							}
-							if(isInteger(ids[1])){
-								theReturn[1] = (Integer.parseInt(ids[1]));
-							}
-							return theReturn;
 						}
-					}
-					else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
-						forum_Login();
-						if(getLoggedin()){
+						else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
+							forum_Login();
+							if(IsLoggedin()){
+								return thread_New(forumid, subject, message, loop);
+							}
+						}
+						else if(errorMsg.equals("invalid_api_signature")){
 							return thread_New(forumid, subject, message, loop);
 						}
 					}
-					else if(errorMsg.equals("invalid_api_signature")){
-						return thread_New(forumid, subject, message, loop);
+				}
+			}
+			errorsCommon(errorMsg);
+			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
+		}
+		throw new NoConnectionException();
+	}
+	/**Attempts to open a Thread in the forum
+	 * @param threadid
+	 * @return true on success
+	 * @throws NoPermissionLoggedout
+	 * @throws NoPermissionLoggedout
+	 * @throws VBulletinAPIException
+	 */
+	public boolean thread_Open(int threadid) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		return thread_Open(""+threadid);
+	}
+	/**Attempts to open a Thread in the forum
+	 * @param threadid
+	 * @return true on success
+	 * @throws NoPermissionLoggedout
+	 * @throws NoPermissionLoggedout
+	 * @throws VBulletinAPIException
+	 */
+	public boolean thread_Open(String threadid) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		return thread_Open(threadid, 0);
+	}
+	/**Attempts to open a Thread in the forum
+	 * @param threadid
+	 * @param loop
+	 * @return true on success
+	 * @throws NoPermissionLoggedout
+	 * @throws NoPermissionLoggedout
+	 * @throws VBulletinAPIException
+	 */
+	private boolean thread_Open(String threadid, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		if(IsConnected()){
+			String errorMsg = null;
+			loop++;
+			HashMap<String, String> params = new HashMap<String, String>();
+			params.put("threadid", threadid);
+			errorMsg = parseResponse(callMethod("inlinemod_open", params, true));
+			if(loop < 4){//no inifinite loop by user
+				if(errorMsg != null){
+					if(errorMsg.length() > 0){
+						if(errorMsg.equals("something...need success")){//success//TODO need the success result....
+							return true;
+						}
+						else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
+							forum_Login();
+							if(IsLoggedin()){
+								return thread_Open(threadid, loop);
+							}
+						}
+						else if(errorMsg.equals("invalid_api_signature")){
+							return thread_Open(threadid, loop);
+						}
 					}
 				}
 			}
+			errorsCommon(errorMsg);
+			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
 		}
-		if(errorMsg.equals("invalid_api_signature")){
-			throw new InvalidAPISignature();
-		}
-		else if(errorMsg.equals("nopermission_loggedout")){
-			throw new NoPermissionLoggedout();
-		}
-		else if(errorMsg.equals("invalid_accesstoken")){
-			throw new InvalidAccessToken();
-		}
-		else if(errorMsg.equals("SocketTimeoutException")){
-			throw new APISocketTimeoutException();
-		}
-		else if(errorMsg.equals("IOException")){
-			throw new APIIOException();
-		}
-		//Base.Console.warning("SC2Mafia Forum API unable submit Thread! Reason: '"+errorMsg+"'");
-		throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
-		//return errorMsg;
+		throw new NoConnectionException();
 	}
 }
