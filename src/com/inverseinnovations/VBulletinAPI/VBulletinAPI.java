@@ -788,23 +788,35 @@ public final class VBulletinAPI extends Thread{
 		}
 		throw new NoConnectionException();
 	}
-	/**Sends a message to the 'user' using the saved Forum User Proxy(should be eMafia Game Master)
+	/**Sends a message to the 'user'. Does not add the account's signature.
 	 * @param user
 	 * @param title subject
 	 * @param message
 	 * @return "pm_messagesent" on success
 	 */
 	public boolean pm_SendNew(String user,String title,String message) throws PMRecipTurnedOff, PMRecipientsNotFound, NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
-		return pm_SendNew( user, title, message, 0);
+		return pm_SendNew( user, title, message, false, 0);
 	}
-	/**Sends a message to the 'user' using the saved Forum User Proxy(should be eMafia Game Master)
+	/**Sends a message to the 'user'.
+	 * @param user
+	 * @param title subject
+	 * @param message
+	 * @param signature post signature
+	 * @return "pm_messagesent" on success
+	 */
+	public boolean pm_SendNew(String user,String title,String message, boolean signature) throws PMRecipTurnedOff, PMRecipientsNotFound, NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		return pm_SendNew( user, title, message, signature, 0);
+	}
+	/**Sends a message to the 'user'.
 	 * pmfloodcheck = too many PMs too fast
 	 * @param user
 	 * @param title subject
 	 * @param message
+	 * @param signature post signature
+	 * @param loop how many iretations it went through
 	 * @return "pm_messagesent" on success
 	 */
-	private boolean pm_SendNew(String user,String title,String message, int loop) throws PMRecipTurnedOff, PMRecipientsNotFound, NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	private boolean pm_SendNew(String user,String title,String message, boolean signature, int loop) throws PMRecipTurnedOff, PMRecipientsNotFound, NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
 		if(IsConnected()){
 			loop++;
 			String errorMsg;
@@ -812,7 +824,7 @@ public final class VBulletinAPI extends Thread{
 			params.put("title", title);
 			params.put("message", message);
 			params.put("recipients", user);
-			params.put("signature", "1");
+			if(signature){params.put("signature", "1");}else{params.put("signature", "0");}
 			errorMsg = parseResponse(callMethod("private_insertpm", params, true));
 			if(loop < 4){//no inifinite loop by user
 				if(errorMsg != null){
@@ -822,12 +834,12 @@ public final class VBulletinAPI extends Thread{
 					else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")||errorMsg.equals("invalid_api_signature")){
 						forum_Login();
 						if(IsLoggedin()){
-							return pm_SendNew(user, title, message,loop);
+							return pm_SendNew(user, title, message, signature,loop);
 						}
 						//return errorMsg;
 					}
 					else if(errorMsg.equals("invalid_api_signature")){
-						return pm_SendNew( user, title, message,loop);
+						return pm_SendNew( user, title, message, signature,loop);
 					}
 				}
 			}
@@ -884,37 +896,49 @@ public final class VBulletinAPI extends Thread{
 		}
 		throw new NoConnectionException();
 	}
-	/**Attempts to edit a post based on the post id
+	/**Attempts to edit a post based on the post id, does not post the user's signature
 	 * @param postid
 	 * @param message
 	 * @return true on successs
 	 */
 	public boolean post_Edit(int postid,String message) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
-		return post_Edit(""+postid, message);
+		return post_Edit(""+postid, message, false);
 	}
 	/**Attempts to edit a post based on the post id
 	 * @param postid
 	 * @param message
+	 * @param signature post signature
 	 * @return true on successs
-	 * @throws VBulletinAPIException
 	 */
-	public boolean post_Edit(String postid,String message) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
-		return post_Edit(postid, message, 0);
+	public boolean post_Edit(int postid,String message, boolean signature) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		return post_Edit(""+postid, message, signature);
 	}
 	/**Attempts to edit a post based on the post id
 	 * @param postid
 	 * @param message
+	 * @param signature post signature
 	 * @return true on successs
 	 * @throws VBulletinAPIException
 	 */
-	private boolean post_Edit(String postid,String message, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public boolean post_Edit(String postid,String message, boolean signature) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		return post_Edit(postid, message, signature, 0);
+	}
+	/**Attempts to edit a post based on the post id
+	 * @param postid
+	 * @param message
+	 * @param signature post signature
+	 * @param loop how many iretations it went through
+	 * @return true on successs
+	 * @throws VBulletinAPIException
+	 */
+	private boolean post_Edit(String postid,String message, boolean signature, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
 		if(IsConnected()){
 			String errorMsg;
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
 			params.put("postid", postid);
 			params.put("message", message);
-			params.put("signature", "1");
+			if(signature){params.put("signature", "1");}else{params.put("signature", "0");}
 			errorMsg = parseResponse(callMethod("editpost_updatepost", params, true));
 			if(loop < 4){
 				if(errorMsg != null){
@@ -924,11 +948,11 @@ public final class VBulletinAPI extends Thread{
 					else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
 						forum_Login();
 						if(IsLoggedin()){
-							return post_Edit(postid, message, loop);
+							return post_Edit(postid, message, signature, loop);
 						}
 					}
 					else if(errorMsg.equals("invalid_api_signature")){
-						return post_Edit(postid, message, loop);
+						return post_Edit(postid, message, signature, loop);
 					}
 				}
 			}
@@ -937,36 +961,47 @@ public final class VBulletinAPI extends Thread{
 		}
 		throw new NoConnectionException();
 	}
-	/**Attempts to post a new reply in said Thread
+	/**Attempts to post a new reply in said Thread, does not post the user's signature
 	 * @param threadid
 	 * @param message
 	 * @return int[0] = threadid / int[1] = postid
 	 */
 	public int[] post_New(int threadid,String message) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
-		return post_New(""+threadid, message);
+		return post_New(""+threadid, message, false);
+	}
+	/**Attempts to post a new reply in said Thread
+	 * @param threadid
+	 * @param message
+	 * @param signature post signature
+	 * @return int[0] = threadid / int[1] = postid
+	 */
+	public int[] post_New(int threadid,String message, boolean signature) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		return post_New(""+threadid, message, signature);
 	}
 	/**Attempts to post a new reply in said Thread
 	 * @param threadid
 	 * @param message
 	 * @return int[0] = threadid / int[1] = postid
 	 */
-	public int[] post_New(String threadid,String message) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
-		return post_New(threadid, message, 0);
+	public int[] post_New(String threadid,String message, boolean signature) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		return post_New(threadid, message, signature, 0);
 	}
 	/**Attempts to post a new reply in said Thread
 	 * @param threadid
 	 * @param message
+	 * @param signature post signature
+	 * @param loop how many iretations it went through
 	 * @return int[0] = threadid / int[1] = postid
 	 * @throws VBulletinAPIException
 	 */
-	private int[] post_New(String threadid,String message, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	private int[] post_New(String threadid,String message, boolean signature, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
 		if(IsConnected()){
 			loop++;
 			String errorMsg;
 			HashMap<String, String> params = new HashMap<String, String>();
 			params.put("threadid", threadid);
 			params.put("message", message);
-			params.put("signature", "1");
+			if(signature){params.put("signature", "1");}else{params.put("signature", "0");}
 			errorMsg = parseResponse(callMethod("newreply_postreply", params, true));
 			if(loop < 4){
 				if(errorMsg != null){
@@ -987,11 +1022,11 @@ public final class VBulletinAPI extends Thread{
 					else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
 						forum_Login();
 						if(IsConnected()){
-							return post_New(threadid, message, loop);
+							return post_New(threadid, message, signature, loop);
 						}
 					}
 					else if(errorMsg.equals("invalid_api_signature")){
-						return post_New(threadid, message, loop);
+						return post_New(threadid, message, signature, loop);
 					}
 				}
 			}
@@ -1147,7 +1182,7 @@ public final class VBulletinAPI extends Thread{
 		}
 		throw new NoConnectionException();
 	}
-	/**Attempts to post a new Thread in the forum, returns the posted Thread id and Post id for later use.
+	/**Attempts to post a new Thread in the forum, returns the posted Thread id and Post id for later use. Does not include the user's signature.
 	 * @param forumid
 	 * @param subject
 	 * @param message
@@ -1155,26 +1190,40 @@ public final class VBulletinAPI extends Thread{
 	 * @throws VBulletinAPIException
 	 */
 	public int[] thread_New(int forumid,String subject,String message) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
-		return thread_New(""+forumid,subject,message);
+		return thread_New(""+forumid,subject,message, false);
 	}
 	/**Attempts to post a new Thread in the forum, returns the posted Thread id and Post id for later use.
 	 * @param forumid
 	 * @param subject
 	 * @param message
+	 * @param signature post signature
 	 * @return int[0] = threadid int[1] = postid
 	 * @throws VBulletinAPIException
 	 */
-	public int[] thread_New(String forumid,String subject,String message) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
-		return thread_New(forumid,subject,message, 0);
+	public int[] thread_New(int forumid,String subject,String message, boolean signature) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		return thread_New(""+forumid,subject,message, signature);
 	}
 	/**Attempts to post a new Thread in the forum, returns the posted Thread id and Post id for later use.
 	 * @param forumid
 	 * @param subject
 	 * @param message
+	 * @param signature post signature
+	 * @return int[0] = threadid int[1] = postid
+	 * @throws VBulletinAPIException
+	 */
+	public int[] thread_New(String forumid,String subject,String message, boolean signature) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		return thread_New(forumid,subject,message, signature, 0);
+	}
+	/**Attempts to post a new Thread in the forum, returns the posted Thread id and Post id for later use.
+	 * @param forumid
+	 * @param subject
+	 * @param message
+	 * @param signature post signature
+	 * @param loop how many iretations it went through
 	 * @return int[0] = threadid / int[1] = postid
 	 * @throws VBulletinAPIException
 	 */
-	private int[] thread_New(String forumid,String subject,String message, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	private int[] thread_New(String forumid,String subject,String message, boolean signature, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
 		if(IsConnected()){
 			String errorMsg = null;
 			loop++;
@@ -1182,7 +1231,7 @@ public final class VBulletinAPI extends Thread{
 			params.put("forumid", forumid);
 			params.put("subject", subject);
 			params.put("message", message);
-			params.put("signature", "1");
+			if(signature){params.put("signature", "1");}else{params.put("signature", "0");}
 			errorMsg = parseResponse(callMethod("newthread_postthread", params, true));
 			if(loop < 4){//no inifinite loop by user
 				if(errorMsg != null){
@@ -1204,11 +1253,11 @@ public final class VBulletinAPI extends Thread{
 						else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
 							forum_Login();
 							if(IsLoggedin()){
-								return thread_New(forumid, subject, message, loop);
+								return thread_New(forumid, subject, message, signature, loop);
 							}
 						}
 						else if(errorMsg.equals("invalid_api_signature")){
-							return thread_New(forumid, subject, message, loop);
+							return thread_New(forumid, subject, message, signature, loop);
 						}
 					}
 				}
