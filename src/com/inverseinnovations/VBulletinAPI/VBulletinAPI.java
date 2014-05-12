@@ -43,7 +43,7 @@ public final class VBulletinAPI extends Thread{
 			}
 		}
 	}
-	final public static double VERSION = 0.1;
+	final public static double VERSION = 0.2;
 	/**
 	 * Checks if a String may be translated as an int
 	 * @param s String to check
@@ -1267,6 +1267,64 @@ public final class VBulletinAPI extends Thread{
 						}
 						else if(errorMsg.equals("invalid_api_signature")){
 							return thread_Open(threadid, loop);
+						}
+					}
+				}
+			}
+			errorsCommon(errorMsg);
+			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
+		}
+		throw new NoConnectionException();
+	}
+	/**Attempts to delete a Thread in the forum
+	 * @param threadid
+	 * @return true on success
+	 * @throws NoPermissionLoggedout
+	 * @throws NoPermissionLoggedout
+	 * @throws VBulletinAPIException
+	 */
+	public boolean thread_Delete(int threadid) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		return thread_Delete(""+threadid);
+	}
+	/**Attempts to delete a Thread in the forum
+	 * @param threadid
+	 * @return true on success
+	 * @throws NoPermissionLoggedout
+	 * @throws NoPermissionLoggedout
+	 * @throws VBulletinAPIException
+	 */
+	public boolean thread_Delete(String threadid) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		return thread_Delete(threadid, 0);
+	}
+	/**Attempts to delete a Thread in the forum
+	 * @param threadid
+	 * @param loop
+	 * @return true on success
+	 * @throws NoPermissionLoggedout
+	 * @throws NoPermissionLoggedout
+	 * @throws VBulletinAPIException
+	 */
+	private boolean thread_Delete(String threadid, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		if(IsConnected()){
+			String errorMsg = null;
+			loop++;
+			HashMap<String, String> params = new HashMap<String, String>();
+			params.put("threadid", threadid);
+			errorMsg = parseResponse(callMethod("inlinemod_dodeletethreads", params, true));
+			if(loop < 4){//no inifinite loop by user
+				if(errorMsg != null){
+					if(errorMsg.length() > 0){
+						if(errorMsg.equals("something...need success")){//success//TODO need the success result....
+							return true;
+						}
+						else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
+							forum_Login();
+							if(IsLoggedin()){
+								return thread_Delete(threadid, loop);
+							}
+						}
+						else if(errorMsg.equals("invalid_api_signature")){
+							return thread_Delete(threadid, loop);
 						}
 					}
 				}
