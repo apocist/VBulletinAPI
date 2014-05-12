@@ -237,7 +237,7 @@ public final class VBulletinAPI extends Thread{
 				//System.out.println("encoded: "+queryStringBuffer.toString());
 				//queryStringBuffer.append("&api_sig="+ generateHash( (queryStringBuffer.toString() + apiAccessToken+ apiClientID + secret + apikey)).toLowerCase());
 				queryStringBuffer.append("&api_sig="+ MD5( (queryStringBuffer.toString() + getAPIAccessToken()+ apiClientID + getSecret() + getAPIkey())).toLowerCase());
-				//System.out.println("encoded: "+queryStringBuffer.toString());
+				System.out.println("encoded: "+queryStringBuffer.toString());
 			}
 
 			queryStringBuffer.append("&api_c=" + apiClientID);
@@ -707,22 +707,42 @@ public final class VBulletinAPI extends Thread{
 		System.out.println(response.toString());
 		return theReturn;
 	}
-	/**Attempts to empty the Game Master's PM Inbox
+	/**Attempts to empty the primary PM Inbox
+	 * @param folderid which folder to empty
 	 * @return true on success
 	 */
 	public boolean pm_EmptyInbox() throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
 		return  pm_EmptyInbox(0);
 	}
-	/**Attempts to empty the Game Master's PM Inbox
+	/**Attempts to empty a PM Inbox. folderid 0 is the primary inbox.
+	 * @param folderid which folder to empty
 	 * @return true on success
 	 */
-	private boolean pm_EmptyInbox(int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public boolean pm_EmptyInbox(int folderid) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		return  pm_EmptyInbox(folderid, 9876543210L);
+	}
+	/**Attempts to empty a PM Inbox of all messages before the given date. folderid 0 is the primary inbox.
+	 * @param folderid which folder to empty
+	 * @param dateToDelete delete all before this date(forum time)
+	 * @return true on success
+	 */
+	public boolean pm_EmptyInbox(int folderid, long dateToDelete) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+		return  pm_EmptyInbox(""+folderid, ""+dateToDelete, 0);
+	}
+	/**Attempts to empty a PM Inbox of all messages before the given date. folderid 0 is the primary inbox.
+	 * @param folderid which folder to empty
+	 * @param dateToDelete delete all before this date(forum time)
+	 * @param loop how many iretations it went through
+	 * @return true on success
+	 */
+	private boolean pm_EmptyInbox(String folderid, String dateToDelete, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
 		if(IsConnected()){
 			String errorMsg = null;
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();//150885
-			params.put("dateline", "9876543210");
-			params.put("folderid", "0");
+			//params.put("dateline", "9876543210");
+			params.put("dateline", dateToDelete);
+			params.put("folderid", folderid);
 			errorMsg = parseResponse(callMethod("private_confirmemptyfolder", params, true));
 			if(loop < 4){//no inifinite loop by user
 				if(errorMsg != null){
@@ -732,11 +752,11 @@ public final class VBulletinAPI extends Thread{
 					else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
 						forum_Login();
 						if(IsLoggedin()){
-							return pm_EmptyInbox(loop);
+							return pm_EmptyInbox(folderid, dateToDelete, loop);
 						}
 					}
 					else if(errorMsg.equals("invalid_api_signature")){
-						return pm_EmptyInbox(loop);
+						return pm_EmptyInbox(folderid, dateToDelete, loop);
 					}
 				}
 			}
@@ -1289,7 +1309,7 @@ public final class VBulletinAPI extends Thread{
 	}
 	/**Attempts to open a Thread in the forum
 	 * @param threadid
-	 * @param loop
+	 * @param loop how many iretations it went through
 	 * @return true on success
 	 * @throws NoPermissionLoggedout
 	 * @throws NoPermissionLoggedout
@@ -1347,7 +1367,7 @@ public final class VBulletinAPI extends Thread{
 	}
 	/**Attempts to delete a Thread in the forum
 	 * @param threadid
-	 * @param loop
+	 * @param loop how many iretations it went through
 	 * @return true on success
 	 * @throws NoPermissionLoggedout
 	 * @throws NoPermissionLoggedout
