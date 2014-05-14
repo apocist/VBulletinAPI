@@ -710,23 +710,35 @@ public final class VBulletinAPI extends Thread{
 	/**Attempts to empty the primary PM Inbox
 	 * @param folderid which folder to empty
 	 * @return true on success
+	 * @throws InvalidId on non existant Private Message Folder
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to empty private message folders
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public boolean pm_EmptyInbox() throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public boolean pm_EmptyInbox() throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return  pm_EmptyInbox(0);
 	}
 	/**Attempts to empty a PM Inbox. folderid 0 is the primary inbox.
 	 * @param folderid which folder to empty
 	 * @return true on success
+	 * @throws InvalidId on non existant Private Message Folder
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to empty private message folders
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public boolean pm_EmptyInbox(int folderid) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public boolean pm_EmptyInbox(int folderid) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return  pm_EmptyInbox(folderid, 9876543210L);
 	}
 	/**Attempts to empty a PM Inbox of all messages before the given date. folderid 0 is the primary inbox.
 	 * @param folderid which folder to empty
 	 * @param dateToDelete delete all before this date(forum time)
 	 * @return true on success
+	 * @throws InvalidId on non existant Private Message Folder
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to empty private message folders
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public boolean pm_EmptyInbox(int folderid, long dateToDelete) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public boolean pm_EmptyInbox(int folderid, long dateToDelete) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return  pm_EmptyInbox(""+folderid, ""+dateToDelete, 0);
 	}
 	/**Attempts to empty a PM Inbox of all messages before the given date. folderid 0 is the primary inbox.
@@ -734,8 +746,12 @@ public final class VBulletinAPI extends Thread{
 	 * @param dateToDelete delete all before this date(forum time)
 	 * @param loop how many iretations it went through
 	 * @return true on success
+	 * @throws InvalidId on non existant Private Message Folder
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to empty private message folders
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	private boolean pm_EmptyInbox(String folderid, String dateToDelete, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	private boolean pm_EmptyInbox(String folderid, String dateToDelete, int loop) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		if(IsConnected()){
 			String errorMsg = null;
 			loop++;
@@ -760,21 +776,28 @@ public final class VBulletinAPI extends Thread{
 					}
 				}
 			}
+			if(errorMsg.equals("invalidid")){
+				throw new InvalidId("folder");
+			}
 			errorsCommon(errorMsg);
 			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
 		}
 		throw new NoConnectionException();
 	}
-	/**Returns list of PMs in the inbox
+	/**Returns list of PMs in the primary inbox
 	 * @return
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public ArrayList<Message> pm_ListPMs() throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public ArrayList<Message> pm_ListPMs() throws NoPermissionLoggedout, VBulletinAPIException{
 		return pm_ListPMs(0);
 	}
-	/**Returns list of PMs in the inbox
+	/**Returns list of PMs in the primary inbox
 	 * @return
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	private ArrayList<Message> pm_ListPMs(int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{//TODO need to reserve to order to show oldest first
+	private ArrayList<Message> pm_ListPMs(int loop) throws NoPermissionLoggedout, VBulletinAPIException{//TODO need to reserve to order to show oldest first
 		if(IsConnected()){
 			String errorMsg;
 			HashMap<String, String> params = new HashMap<String, String>();
@@ -813,8 +836,13 @@ public final class VBulletinAPI extends Thread{
 	 * @param title subject
 	 * @param message
 	 * @return "pm_messagesent" on success
+	 * @throws PMRecipTurnedOff when the recipient is not allowing private messages
+	 * @throws PMRecipientsNotFound when the user does not exist
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to send private messages
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public boolean pm_SendNew(String user,String title,String message) throws PMRecipTurnedOff, PMRecipientsNotFound, NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public boolean pm_SendNew(String user,String title,String message) throws PMRecipTurnedOff, PMRecipientsNotFound, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return pm_SendNew( user, title, message, false, 0);
 	}
 	/**Sends a message to the 'user'.
@@ -823,8 +851,13 @@ public final class VBulletinAPI extends Thread{
 	 * @param message
 	 * @param signature post signature
 	 * @return "pm_messagesent" on success
+	 * @throws PMRecipTurnedOff when the recipient is not allowing private messages
+	 * @throws PMRecipientsNotFound when the user does not exist
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to send private messages
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public boolean pm_SendNew(String user,String title,String message, boolean signature) throws PMRecipTurnedOff, PMRecipientsNotFound, NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public boolean pm_SendNew(String user,String title,String message, boolean signature) throws PMRecipTurnedOff, PMRecipientsNotFound, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return pm_SendNew( user, title, message, signature, 0);
 	}
 	/**Sends a message to the 'user'.
@@ -835,8 +868,13 @@ public final class VBulletinAPI extends Thread{
 	 * @param signature post signature
 	 * @param loop how many iretations it went through
 	 * @return "pm_messagesent" on success
+	 * @throws PMRecipTurnedOff when the recipient is not allowing private messages
+	 * @throws PMRecipientsNotFound when the user does not exist
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to send private messages
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	private boolean pm_SendNew(String user,String title,String message, boolean signature, int loop) throws PMRecipTurnedOff, PMRecipientsNotFound, NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	private boolean pm_SendNew(String user,String title,String message, boolean signature, int loop) throws PMRecipTurnedOff, PMRecipientsNotFound, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		if(IsConnected()){
 			loop++;
 			String errorMsg;
@@ -877,16 +915,22 @@ public final class VBulletinAPI extends Thread{
 	/**Grabs the message from the PM specified by the pmID
 	 * @param pmId
 	 * @return message text as String
+	 * @throws InvalidId on non existant Private Message
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public String pm_ViewPM(String pmId) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public String pm_ViewPM(String pmId) throws InvalidId, NoPermissionLoggedout, VBulletinAPIException{
 		return pm_ViewPM(pmId, 0);
 	}
 	/**Grabs the message from the PM specified by the pmID
 	 * @param pmId
 	 * @param loop increasing int to prevent inifinite loops
 	 * @return message text as String
+	 * @throws InvalidId on non existant Private Message
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	private String pm_ViewPM(String pmId, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	private String pm_ViewPM(String pmId, int loop) throws InvalidId, NoPermissionLoggedout, VBulletinAPIException{
 		if(IsConnected()){
 			String errorMsg = null;
 			loop++;
@@ -910,6 +954,9 @@ public final class VBulletinAPI extends Thread{
 						}
 					}
 				}
+				else if(errorMsg.equals("invalidid")){
+					throw new InvalidId("private message");
+				}
 				errorsCommon(errorMsg);
 			}
 			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
@@ -920,8 +967,13 @@ public final class VBulletinAPI extends Thread{
 	 * @param postid
 	 * @param message
 	 * @return true on successs
+	 * @throws ThreadClosed when attempting to edit a post in a closed thread
+	 * @throws InvalidId on non existant Post
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to edit this post
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public boolean post_Edit(int postid,String message) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public boolean post_Edit(int postid,String message) throws ThreadClosed, InvalidId,NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return post_Edit(""+postid, message, false);
 	}
 	/**Attempts to edit a post based on the post id
@@ -929,8 +981,13 @@ public final class VBulletinAPI extends Thread{
 	 * @param message
 	 * @param signature post signature
 	 * @return true on successs
+	 * @throws ThreadClosed when attempting to edit a post in a closed thread
+	 * @throws InvalidId on non existant Post
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to edit this post
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public boolean post_Edit(int postid,String message, boolean signature) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public boolean post_Edit(int postid,String message, boolean signature) throws ThreadClosed, InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return post_Edit(""+postid, message, signature);
 	}
 	/**Attempts to edit a post based on the post id
@@ -938,9 +995,13 @@ public final class VBulletinAPI extends Thread{
 	 * @param message
 	 * @param signature post signature
 	 * @return true on successs
-	 * @throws VBulletinAPIException
+	 * @throws ThreadClosed when attempting to edit a post in a closed thread
+	 * @throws InvalidId on non existant Post
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to edit this post
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public boolean post_Edit(String postid,String message, boolean signature) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public boolean post_Edit(String postid,String message, boolean signature) throws ThreadClosed, InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return post_Edit(postid, message, signature, 0);
 	}
 	/**Attempts to edit a post based on the post id
@@ -949,9 +1010,13 @@ public final class VBulletinAPI extends Thread{
 	 * @param signature post signature
 	 * @param loop how many iretations it went through
 	 * @return true on successs
-	 * @throws VBulletinAPIException
+	 * @throws ThreadClosed when attempting to edit a post in a closed thread
+	 * @throws InvalidId on non existant Post
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to edit this post
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	private boolean post_Edit(String postid,String message, boolean signature, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	private boolean post_Edit(String postid,String message, boolean signature, int loop) throws ThreadClosed, InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		if(IsConnected()){
 			String errorMsg;
 			loop++;
@@ -976,6 +1041,12 @@ public final class VBulletinAPI extends Thread{
 					}
 				}
 			}
+			if(errorMsg.equals("threadclosed")){
+				throw new ThreadClosed();
+			}
+			else if(errorMsg.equals("invalidid")){
+				throw new InvalidId("post");
+			}
 			errorsCommon(errorMsg);
 			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
 		}
@@ -985,8 +1056,13 @@ public final class VBulletinAPI extends Thread{
 	 * @param threadid
 	 * @param message
 	 * @return int[0] = threadid / int[1] = postid
+	 * @throws ThreadClosed when attempting to post in a closed thread
+	 * @throws InvalidId on non existant Thread
+	 * @throws NoPermissionLoggedout when logged out, and does not accept annon posts
+	 * @throws NoPermissionLoggedin when account does not have permission to post in this thread
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public int[] post_New(int threadid,String message) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public int[] post_New(int threadid,String message) throws ThreadClosed, InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return post_New(""+threadid, message, false);
 	}
 	/**Attempts to post a new reply in said Thread
@@ -994,16 +1070,26 @@ public final class VBulletinAPI extends Thread{
 	 * @param message
 	 * @param signature post signature
 	 * @return int[0] = threadid / int[1] = postid
+	 * @throws ThreadClosed when attempting to post in a closed thread
+	 * @throws InvalidId on non existant Thread
+	 * @throws NoPermissionLoggedout when logged out, and does not accept annon posts
+	 * @throws NoPermissionLoggedin when account does not have permission to post in this thread
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public int[] post_New(int threadid,String message, boolean signature) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public int[] post_New(int threadid,String message, boolean signature) throws ThreadClosed, InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return post_New(""+threadid, message, signature);
 	}
 	/**Attempts to post a new reply in said Thread
 	 * @param threadid
 	 * @param message
 	 * @return int[0] = threadid / int[1] = postid
+	 * @throws ThreadClosed when attempting to post in a closed thread
+	 * @throws InvalidId on non existant Thread
+	 * @throws NoPermissionLoggedout when logged out, and does not accept annon posts
+	 * @throws NoPermissionLoggedin when account does not have permission to post in this thread
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public int[] post_New(String threadid,String message, boolean signature) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public int[] post_New(String threadid,String message, boolean signature) throws ThreadClosed, InvalidId,NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return post_New(threadid, message, signature, 0);
 	}
 	/**Attempts to post a new reply in said Thread
@@ -1012,9 +1098,13 @@ public final class VBulletinAPI extends Thread{
 	 * @param signature post signature
 	 * @param loop how many iretations it went through
 	 * @return int[0] = threadid / int[1] = postid
-	 * @throws VBulletinAPIException
+	 * @throws ThreadClosed when attempting to post in a closed thread
+	 * @throws InvalidId on non existant Thread
+	 * @throws NoPermissionLoggedout when logged out, and does not accept annon posts
+	 * @throws NoPermissionLoggedin when account does not have permission to post in this thread
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	private int[] post_New(String threadid,String message, boolean signature, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	private int[] post_New(String threadid,String message, boolean signature, int loop) throws ThreadClosed, InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		if(IsConnected()){
 			loop++;
 			String errorMsg;
@@ -1049,6 +1139,12 @@ public final class VBulletinAPI extends Thread{
 						return post_New(threadid, message, signature, loop);
 					}
 				}
+			}
+			if(errorMsg.equals("threadclosed")){
+				throw new ThreadClosed();
+			}
+			else if(errorMsg.equals("invalidid")){
+				throw new InvalidId("thread");
 			}
 			errorsCommon(errorMsg);
 			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
@@ -1147,32 +1243,35 @@ public final class VBulletinAPI extends Thread{
 	/**Attempts to close a Thread in the forum
 	 * @param threadid
 	 * @return true on success
-	 * @throws NoPermissionLoggedout
-	 * @throws NoPermissionLoggedout
-	 * @throws VBulletinAPIException
+	 * @throws InvalidId on non existant Thread
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to close own or other's threads
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public boolean thread_Close(int threadid) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public boolean thread_Close(int threadid) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return thread_Close(""+threadid);
 	}
 	/**Attempts to close a Thread in the forum
 	 * @param threadid
 	 * @return true on success
-	 * @throws NoPermissionLoggedout
-	 * @throws NoPermissionLoggedout
-	 * @throws VBulletinAPIException
+	 * @throws InvalidId on non existant Thread
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to close own or other's threads
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public boolean thread_Close(String threadid) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public boolean thread_Close(String threadid) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return thread_Close(threadid, 0);
 	}
 	/**Attempts to close a Thread in the forum
 	 * @param threadid
 	 * @param loop
 	 * @return true on success
-	 * @throws NoPermissionLoggedout
-	 * @throws NoPermissionLoggedout
-	 * @throws VBulletinAPIException
+	 * @throws InvalidId on non existant Thread
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to close own or other's threads
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	private boolean thread_Close(String threadid, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	private boolean thread_Close(String threadid, int loop) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		if(IsConnected()){
 			String errorMsg = null;
 			loop++;
@@ -1197,6 +1296,9 @@ public final class VBulletinAPI extends Thread{
 					}
 				}
 			}
+			if(errorMsg.equals("invalidid")){
+				throw new InvalidId("thread");
+			}
 			errorsCommon(errorMsg);
 			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
 		}
@@ -1207,9 +1309,12 @@ public final class VBulletinAPI extends Thread{
 	 * @param subject
 	 * @param message
 	 * @return int[0] = threadid int[1] = postid
-	 * @throws VBulletinAPIException
+	 * @throws InvalidId on non existant Forum
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to create threads in the forum
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public int[] thread_New(int forumid,String subject,String message) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public int[] thread_New(int forumid,String subject,String message) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return thread_New(""+forumid,subject,message, false);
 	}
 	/**Attempts to post a new Thread in the forum, returns the posted Thread id and Post id for later use.
@@ -1218,9 +1323,12 @@ public final class VBulletinAPI extends Thread{
 	 * @param message
 	 * @param signature post signature
 	 * @return int[0] = threadid int[1] = postid
-	 * @throws VBulletinAPIException
+	 * @throws InvalidId on non existant Forum
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to create threads in the forum
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public int[] thread_New(int forumid,String subject,String message, boolean signature) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public int[] thread_New(int forumid,String subject,String message, boolean signature) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return thread_New(""+forumid,subject,message, signature);
 	}
 	/**Attempts to post a new Thread in the forum, returns the posted Thread id and Post id for later use.
@@ -1229,9 +1337,12 @@ public final class VBulletinAPI extends Thread{
 	 * @param message
 	 * @param signature post signature
 	 * @return int[0] = threadid int[1] = postid
-	 * @throws VBulletinAPIException
+	 * @throws InvalidId on non existant Forum
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to create threads in the forum
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public int[] thread_New(String forumid,String subject,String message, boolean signature) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public int[] thread_New(String forumid,String subject,String message, boolean signature) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return thread_New(forumid,subject,message, signature, 0);
 	}
 	/**Attempts to post a new Thread in the forum, returns the posted Thread id and Post id for later use.
@@ -1241,9 +1352,12 @@ public final class VBulletinAPI extends Thread{
 	 * @param signature post signature
 	 * @param loop how many iretations it went through
 	 * @return int[0] = threadid / int[1] = postid
-	 * @throws VBulletinAPIException
+	 * @throws InvalidId on non existant Forum
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to create threads in the forum
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	private int[] thread_New(String forumid,String subject,String message, boolean signature, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	private int[] thread_New(String forumid,String subject,String message, boolean signature, int loop) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		if(IsConnected()){
 			String errorMsg = null;
 			loop++;
@@ -1282,6 +1396,9 @@ public final class VBulletinAPI extends Thread{
 					}
 				}
 			}
+			if(errorMsg.equals("invalidid")){
+				throw new InvalidId("forum");
+			}
 			errorsCommon(errorMsg);
 			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
 		}
@@ -1290,32 +1407,35 @@ public final class VBulletinAPI extends Thread{
 	/**Attempts to open a Thread in the forum
 	 * @param threadid
 	 * @return true on success
-	 * @throws NoPermissionLoggedout
-	 * @throws NoPermissionLoggedout
-	 * @throws VBulletinAPIException
+	 * @throws InvalidId on non existant Thread
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to open own or other threads
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public boolean thread_Open(int threadid) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public boolean thread_Open(int threadid) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return thread_Open(""+threadid);
 	}
 	/**Attempts to open a Thread in the forum
 	 * @param threadid
 	 * @return true on success
-	 * @throws NoPermissionLoggedout
-	 * @throws NoPermissionLoggedout
-	 * @throws VBulletinAPIException
+	 * @throws InvalidId on non existant Thread
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to open own or other threads
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public boolean thread_Open(String threadid) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public boolean thread_Open(String threadid) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return thread_Open(threadid, 0);
 	}
 	/**Attempts to open a Thread in the forum
 	 * @param threadid
 	 * @param loop how many iretations it went through
 	 * @return true on success
-	 * @throws NoPermissionLoggedout
-	 * @throws NoPermissionLoggedout
-	 * @throws VBulletinAPIException
+	 * @throws InvalidId on non existant Thread
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to open own or other threads
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	private boolean thread_Open(String threadid, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	private boolean thread_Open(String threadid, int loop) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		if(IsConnected()){
 			String errorMsg = null;
 			loop++;
@@ -1340,6 +1460,9 @@ public final class VBulletinAPI extends Thread{
 					}
 				}
 			}
+			if(errorMsg.equals("invalidid")){
+				throw new InvalidId("thread");
+			}
 			errorsCommon(errorMsg);
 			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
 		}
@@ -1348,32 +1471,35 @@ public final class VBulletinAPI extends Thread{
 	/**Attempts to delete a Thread in the forum
 	 * @param threadid
 	 * @return true on success
-	 * @throws NoPermissionLoggedout
-	 * @throws NoPermissionLoggedout
-	 * @throws VBulletinAPIException
+	 * @throws InvalidId on non existant Thread
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to delete own or other threads
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public boolean thread_Delete(int threadid) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public boolean thread_Delete(int threadid) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return thread_Delete(""+threadid);
 	}
 	/**Attempts to delete a Thread in the forum
 	 * @param threadid
 	 * @return true on success
-	 * @throws NoPermissionLoggedout
-	 * @throws NoPermissionLoggedout
-	 * @throws VBulletinAPIException
+	 * @throws InvalidId on non existant Thread
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to delete own or other threads
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public boolean thread_Delete(String threadid) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	public boolean thread_Delete(String threadid) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return thread_Delete(threadid, 0);
 	}
 	/**Attempts to delete a Thread in the forum
 	 * @param threadid
 	 * @param loop how many iretations it went through
 	 * @return true on success
-	 * @throws NoPermissionLoggedout
-	 * @throws NoPermissionLoggedout
-	 * @throws VBulletinAPIException
+	 * @throws InvalidId on non existant Thread
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to delete own or other threads
+	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	private boolean thread_Delete(String threadid, int loop) throws NoPermissionLoggedout, NoPermissionLoggedout, VBulletinAPIException{
+	private boolean thread_Delete(String threadid, int loop) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		if(IsConnected()){
 			String errorMsg = null;
 			loop++;
@@ -1397,6 +1523,9 @@ public final class VBulletinAPI extends Thread{
 						}
 					}
 				}
+			}
+			if(errorMsg.equals("invalidid")){
+				throw new InvalidId("thread");
 			}
 			errorsCommon(errorMsg);
 			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
