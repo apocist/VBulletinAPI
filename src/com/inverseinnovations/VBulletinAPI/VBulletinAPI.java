@@ -395,18 +395,6 @@ public final class VBulletinAPI extends Thread{
 		return apiURL;
 	}
 	/**
-	 * Returns if connected into vBulletin forum
-	 */
-	public boolean IsConnected(){
-		return CONNECTED;
-	}
-	/**
-	 * Returns if logged into vBulletin forum
-	 */
-	public boolean IsLoggedin(){
-		return LOGGEDIN;
-	}
-	/**
 	 * Gets the secret value.
 	 *
 	 * @return the secret value
@@ -455,6 +443,12 @@ public final class VBulletinAPI extends Thread{
 			return null;
 		}
 	}
+	/**
+	 * Returns if connected into vBulletin forum
+	 */
+	public boolean IsConnected(){
+		return CONNECTED;
+	}
 	/**Is the username and password set?
 	 * @return
 	 */
@@ -465,6 +459,12 @@ public final class VBulletinAPI extends Thread{
 			}
 		}
 		return false;
+	}
+	/**
+	 * Returns if logged into vBulletin forum
+	 */
+	public boolean IsLoggedin(){
+		return LOGGEDIN;
 	}
 	/**Parses response, designed specifically for gathering the list of all messages. Messages only have the header at this point, the actual message is not included
 	 * @param response
@@ -1304,6 +1304,70 @@ public final class VBulletinAPI extends Thread{
 		}
 		throw new NoConnectionException();
 	}
+	/**Attempts to delete a Thread in the forum
+	 * @param threadid
+	 * @return true on success
+	 * @throws InvalidId on non existant Thread
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to delete own or other threads
+	 * @throws VBulletinAPIException when less common errors occur
+	 */
+	public boolean thread_Delete(int threadid) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		return thread_Delete(""+threadid);
+	}
+	/**Attempts to delete a Thread in the forum
+	 * @param threadid
+	 * @return true on success
+	 * @throws InvalidId on non existant Thread
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to delete own or other threads
+	 * @throws VBulletinAPIException when less common errors occur
+	 */
+	public boolean thread_Delete(String threadid) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		return thread_Delete(threadid, 0);
+	}
+	/**Attempts to delete a Thread in the forum
+	 * @param threadid
+	 * @param loop how many iretations it went through
+	 * @return true on success
+	 * @throws InvalidId on non existant Thread
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to delete own or other threads
+	 * @throws VBulletinAPIException when less common errors occur
+	 */
+	private boolean thread_Delete(String threadid, int loop) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		if(IsConnected()){
+			String errorMsg = null;
+			loop++;
+			HashMap<String, String> params = new HashMap<String, String>();
+			params.put("threadid", threadid);
+			errorMsg = parseResponse(callMethod("inlinemod_dodeletethreads", params, true));
+			if(loop < 4){//no inifinite loop by user
+				if(errorMsg != null){
+					if(errorMsg.length() > 0){
+						if(errorMsg.equals("something...need success")){//success//TODO need the success result....
+							return true;
+						}
+						else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
+							forum_Login();
+							if(IsLoggedin()){
+								return thread_Delete(threadid, loop);
+							}
+						}
+						else if(errorMsg.equals("invalid_api_signature")){
+							return thread_Delete(threadid, loop);
+						}
+					}
+				}
+			}
+			if(errorMsg.equals("invalidid")){
+				throw new InvalidId("thread");
+			}
+			errorsCommon(errorMsg);
+			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
+		}
+		throw new NoConnectionException();
+	}
 	/**Attempts to post a new Thread in the forum, returns the posted Thread id and Post id for later use. Does not include the user's signature.
 	 * @param forumid
 	 * @param subject
@@ -1456,70 +1520,6 @@ public final class VBulletinAPI extends Thread{
 						}
 						else if(errorMsg.equals("invalid_api_signature")){
 							return thread_Open(threadid, loop);
-						}
-					}
-				}
-			}
-			if(errorMsg.equals("invalidid")){
-				throw new InvalidId("thread");
-			}
-			errorsCommon(errorMsg);
-			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
-		}
-		throw new NoConnectionException();
-	}
-	/**Attempts to delete a Thread in the forum
-	 * @param threadid
-	 * @return true on success
-	 * @throws InvalidId on non existant Thread
-	 * @throws NoPermissionLoggedout when logged out
-	 * @throws NoPermissionLoggedin when account does not have permission to delete own or other threads
-	 * @throws VBulletinAPIException when less common errors occur
-	 */
-	public boolean thread_Delete(int threadid) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		return thread_Delete(""+threadid);
-	}
-	/**Attempts to delete a Thread in the forum
-	 * @param threadid
-	 * @return true on success
-	 * @throws InvalidId on non existant Thread
-	 * @throws NoPermissionLoggedout when logged out
-	 * @throws NoPermissionLoggedin when account does not have permission to delete own or other threads
-	 * @throws VBulletinAPIException when less common errors occur
-	 */
-	public boolean thread_Delete(String threadid) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		return thread_Delete(threadid, 0);
-	}
-	/**Attempts to delete a Thread in the forum
-	 * @param threadid
-	 * @param loop how many iretations it went through
-	 * @return true on success
-	 * @throws InvalidId on non existant Thread
-	 * @throws NoPermissionLoggedout when logged out
-	 * @throws NoPermissionLoggedin when account does not have permission to delete own or other threads
-	 * @throws VBulletinAPIException when less common errors occur
-	 */
-	private boolean thread_Delete(String threadid, int loop) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		if(IsConnected()){
-			String errorMsg = null;
-			loop++;
-			HashMap<String, String> params = new HashMap<String, String>();
-			params.put("threadid", threadid);
-			errorMsg = parseResponse(callMethod("inlinemod_dodeletethreads", params, true));
-			if(loop < 4){//no inifinite loop by user
-				if(errorMsg != null){
-					if(errorMsg.length() > 0){
-						if(errorMsg.equals("something...need success")){//success//TODO need the success result....
-							return true;
-						}
-						else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
-							forum_Login();
-							if(IsLoggedin()){
-								return thread_Delete(threadid, loop);
-							}
-						}
-						else if(errorMsg.equals("invalid_api_signature")){
-							return thread_Delete(threadid, loop);
 						}
 					}
 				}
