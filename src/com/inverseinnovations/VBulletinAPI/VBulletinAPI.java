@@ -761,13 +761,11 @@ public final class VBulletinAPI extends Thread{
 					}
 				}
 				if(((LinkedTreeMap)response.get("response")).containsKey("postbits")){
-					if(((LinkedTreeMap)response.get("response")).get("postbits") instanceof ArrayList){
+					if(((LinkedTreeMap)response.get("response")).get("postbits") instanceof ArrayList){//multiple posts
 						@SuppressWarnings("unchecked")
 						ArrayList<LinkedTreeMap> postbits = (ArrayList<LinkedTreeMap>) ((LinkedTreeMap)response.get("response")).get("postbits");
 						for(LinkedTreeMap postHolder : postbits){
-
 							if(postHolder.containsKey("post")){
-								System.out.println("contains post");
 								Post post = new Post();
 								LinkedTreeMap postPost = (LinkedTreeMap) postHolder.get("post");
 								if(postPost.containsKey("postid")){
@@ -830,6 +828,72 @@ public final class VBulletinAPI extends Thread{
 								}
 								thread.posts.add(post);
 							}
+						}
+					}
+					else if(((LinkedTreeMap)response.get("response")).get("postbits") instanceof LinkedTreeMap){//single post
+						LinkedTreeMap postHolder = (LinkedTreeMap) ((LinkedTreeMap)response.get("response")).get("postbits");
+						if(postHolder.containsKey("post")){
+							Post post = new Post();
+							LinkedTreeMap postPost = (LinkedTreeMap) postHolder.get("post");
+							if(postPost.containsKey("postid")){
+								if(isInteger((String) postPost.get("postid"))){
+									post.postid = Integer.parseInt((String) postPost.get("postid"));
+								}
+							}
+							if(postPost.containsKey("posttime")){
+								if(isInteger((String) postPost.get("posttime"))){
+									post.posttime = Long.parseLong((String) postPost.get("posttime"));
+								}
+							}
+							if(postPost.containsKey("threadid")){
+								if(isInteger((String) postPost.get("threadid"))){
+									post.threadid = Integer.parseInt((String) postPost.get("threadid"));
+								}
+							}
+							if(postPost.containsKey("userid")){
+								if(isInteger((String) postPost.get("userid"))){
+									post.userid = Integer.parseInt((String) postPost.get("userid"));
+								}
+							}
+							if(postPost.containsKey("username")){
+								post.username = (String) postPost.get("username");
+							}
+							if(postPost.containsKey("avatarurl")){
+								post.avatarurl = (String) postPost.get("avatarurl");
+							}
+							if(postPost.containsKey("usertitle")){
+								post.usertitle = (String) postPost.get("usertitle");
+							}
+							if(postPost.containsKey("joindate")){
+								if(isInteger((String) postPost.get("joindate"))){
+									post.joindate = Long.parseLong((String) postPost.get("joindate"));
+								}
+							}
+							if(postPost.containsKey("title")){
+								post.title = (String) postPost.get("title");
+							}
+							if(postPost.containsKey("isfirstshown")){
+								if((double) postPost.get("isfirstshown") == 1.0){
+									post.isfirstshown = true;
+								}
+								else{post.isfirstshown = false;}
+							}
+							if(postPost.containsKey("islastshown")){
+								if((double) postPost.get("islastshown") == 1.0){
+									post.islastshown = true;
+								}
+								else{post.islastshown = false;}
+							}
+							if(postPost.containsKey("message")){
+								post.message = (String) postPost.get("message");
+							}
+							if(postPost.containsKey("message_plain")){
+								post.message_plain = (String) postPost.get("message_plain");
+							}
+							if(postPost.containsKey("message_bbcode")){
+								post.message_bbcode = (String) postPost.get("message_bbcode");
+							}
+							thread.posts.add(post);
 						}
 					}
 				}
@@ -1840,6 +1904,33 @@ public final class VBulletinAPI extends Thread{
 		for(Post post : thread.posts){
 			if(post.postid == postid){
 				return post;
+			}
+		}
+		return null;
+	}
+	/**
+	 * @param threadid the thread to search
+	 *@return null when the post cannot be found in the thread
+	 * @throws InvalidId Thread does no exist or left blank
+	 * @throws NoPermissionLoggedout when logged out and guest do not have viewing rights
+	 * @throws NoPermissionLoggedin when account does not have permission to view this thread and post
+	 * @throws VBulletinAPIException when less common errors occur
+	 */
+	public Post thread_ViewLastPost(int threadid) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		boolean success = false;
+		ForumThread thread = null;
+		thread = thread_View(threadid, 1, 1);//just the first post
+		success = true;
+		if(success){
+			success = false;
+			thread = thread_View(threadid, thread.totalposts, 1);
+			success = true;
+			if(success){
+				for(Post post : thread.posts){
+					if(post.islastshown){
+						return post;
+					}
+				}
 			}
 		}
 		return null;
