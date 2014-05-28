@@ -25,5 +25,7 @@ Thread Close(not complete, but should be functional)<br>
 Post Reply<br>
 Post Editing<br>
 <br>
+Exceptions thrown for failed attempts<br>
+<br>
 <b>Usage Example:</b><br>
 Check out https://github.com/apocist/eMafiaServer for it's primary intentional usage.<br>
