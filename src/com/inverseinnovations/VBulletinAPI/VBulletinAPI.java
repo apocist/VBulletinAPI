@@ -11,7 +11,6 @@ import java.net.URLEncoder;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -499,7 +498,7 @@ public final class VBulletinAPI extends Thread{
 	 * @return ArrayList<Message>
 	 */
 	@SuppressWarnings("rawtypes")
-	private ArrayList<Message> parseMessages(LinkedTreeMap<String, Object> response) throws NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+	private ArrayList<Message> parseMessages(LinkedTreeMap<String, Object> response){
 		ArrayList<Message> messages = new ArrayList<Message>();
 		if(response != null){
 			if(response.containsKey("response")){
@@ -580,35 +579,6 @@ public final class VBulletinAPI extends Thread{
 							}
 						}
 					}
-				}
-				if(((LinkedTreeMap)response.get("response")).containsKey("errormessage")){
-					String theError = "";
-					//String errorSecond = "";
-					String className = ((LinkedTreeMap)response.get("response")).get("errormessage").getClass().getName();
-					if(className.equals("java.lang.String")){
-						theError = ((String) ((LinkedTreeMap)response.get("response")).get("errormessage"));
-						if(theError.equals("redirect_postthanks")){//this is for newthread and newpost
-							if(response.containsKey("show")){
-								if(((LinkedTreeMap)response.get("show")).containsKey("threadid")){
-									theError = (String) ((LinkedTreeMap)response.get("show")).get("threadid");
-									theError += " "+(double) ((LinkedTreeMap)response.get("show")).get("postid");
-								}
-							}
-						}
-					}
-					else if(className.equals("java.util.ArrayList")){
-						Object[] errors = ((ArrayList) ((LinkedTreeMap)response.get("response")).get("errormessage")).toArray();
-						if(errors.length > 0){
-							theError = errors[0].toString();
-						}
-						/*if(errors.length > 1){
-							errorSecond = errors[1].toString();
-						}*/
-					}
-					//parse theError here
-					errorsCommon(theError);
-					System.out.println("responseError  response -> errormessage type unknown: "+className);
-					throw new VBulletinAPIException("vBulletin API Unknown Error - "+className);
 				}
 			}
 		}
@@ -992,33 +962,37 @@ public final class VBulletinAPI extends Thread{
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	private ArrayList<Message> pm_ListPMs(int loop) throws NoPermissionLoggedout, VBulletinAPIException{
+	private ArrayList<Message> pm_ListPMs(int loop) throws NoPermissionLoggedout, VBulletinAPIException{//TODO need to reserve to order to show oldest first
 		if(IsConnected()){
-			ArrayList<Message> msgList = new ArrayList<Message>();
-			loop++;
+			String errorMsg;
 			HashMap<String, String> params = new HashMap<String, String>();
-			if(loop < 4){//no inifinite loop by user
-				try {
-					msgList = parseMessages(callMethod("private_messagelist", params, true));
-				} catch (InvalidAccessToken e) {
-					forum_Login();
-					if(IsLoggedin()){
+			LinkedTreeMap<String,Object> linkmap = callMethod("private_messagelist", params, true);
+			errorMsg = parseResponse(linkmap);
+			loop++;
+			if(loop < 4){
+				if(errorMsg != null){
+					if(errorMsg.equals("totalmessages")){//is the inbox
+						ArrayList<Message> msgList = parseMessages(linkmap);
+						for(Message msg:msgList){
+							//try {
+								msg.message = pm_ViewPM(msg.pmid);
+							//}catch (VBulletinAPIException e) {e.printStackTrace();}
+						}
+						return msgList;
+					}
+					else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
+						forum_Login();
+						if(IsLoggedin()){
+							return pm_ListPMs(loop);
+						}
+					}
+					else if(errorMsg.equals("invalid_api_signature")){
 						return pm_ListPMs(loop);
 					}
-					throw e;
-				} catch (NoPermissionLoggedout e) {
-					forum_Login();
-					if(IsLoggedin()){
-						return pm_ListPMs(loop);
-					}
-					throw e;
-				} catch (InvalidAPISignature e) {
-					return pm_ListPMs(loop);
 				}
-				Collections.reverse(msgList);//reverse so it's order is oldest to newest
-				return msgList;
 			}
-			parseMessages(callMethod("private_messagelist", params, true));
+			errorsCommon(errorMsg);
+			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
 		}
 		throw new NoConnectionException();
 	}
