@@ -70,6 +70,7 @@ public final class VBulletinAPI extends Thread{
 		public String message_bbcode;
 	}
 	final public static double VERSION = 0.3;
+	final public static boolean DEBUG = true;
 	/**
 	 * Checks if a String may be translated as an int
 	 * @param s String to check
@@ -267,7 +268,7 @@ public final class VBulletinAPI extends Thread{
 				//System.out.println("encoded: "+queryStringBuffer.toString());
 				//queryStringBuffer.append("&api_sig="+ generateHash( (queryStringBuffer.toString() + apiAccessToken+ apiClientID + secret + apikey)).toLowerCase());
 				queryStringBuffer.append("&api_sig="+ MD5( (queryStringBuffer.toString() + getAPIAccessToken()+ apiClientID + getSecret() + getAPIkey())).toLowerCase());
-				System.out.println("encoded: "+queryStringBuffer.toString());
+				if(DEBUG){System.out.println("encoded: "+queryStringBuffer.toString());}
 			}
 
 			queryStringBuffer.append("&api_c=" + apiClientID);
@@ -711,8 +712,10 @@ public final class VBulletinAPI extends Thread{
 				theReturn = (String) response.get("custom");
 			}
 			//testing this:
-			System.out.println("all ->");//XXX: for testing
-			System.out.println(response.toString());
+			if(DEBUG){
+				System.out.println("all ->");
+				System.out.println(response.toString());
+			}
 		}
 		//Base.Console.debug("SC2Mafia API return error: "+theReturn);
 		return theReturn;
@@ -932,8 +935,10 @@ public final class VBulletinAPI extends Thread{
 				}
 			}
 		}
-		System.out.println("thread all ->");
-		System.out.println(response.toString());
+		if(DEBUG){
+			System.out.println("thread all ->");
+			System.out.println(response.toString());
+		}
 		return thread;
 	}
 	/** Parses json from viewMember into
@@ -984,7 +989,10 @@ public final class VBulletinAPI extends Thread{
 				}
 			}
 		}
-		System.out.println(response.toString());
+		if(DEBUG){
+			System.out.println("member all ->");
+			System.out.println(response.toString());
+		}
 		return theReturn;
 	}
 	/**Attempts to empty the primary PM Inbox
@@ -1151,7 +1159,7 @@ public final class VBulletinAPI extends Thread{
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
 	private boolean pm_SendNew(String user,String title,String message, boolean signature, int loop) throws PMRecipTurnedOff, PMRecipientsNotFound, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		if(IsConnected()){
+		if(IsConnected()){//TODO add Exception for flood checks
 			loop++;
 			String errorMsg;
 			HashMap<String, String> params = new HashMap<String, String>();
@@ -1857,7 +1865,7 @@ public final class VBulletinAPI extends Thread{
 	 * @throws NoPermissionLoggedin when account does not have permission to view this thread
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	private ForumThread thread_View(String threadid, String page, String perpage, String postid, int loop) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{//TODO view by page too(not just post)
+	private ForumThread thread_View(String threadid, String page, String perpage, String postid, int loop) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		if(IsConnected()){
 			ForumThread thread = null;
 			loop++;
@@ -1890,27 +1898,9 @@ public final class VBulletinAPI extends Thread{
 		}
 		throw new NoConnectionException();
 	}
-	/**Attempts to view a post residing a thread. The correct threadid is required as well
-	 * @param threadid the thread the post resides in
-	 * @param postid the post to view
-	 * @return null when the post cannot be found in the thread
-	 * @throws InvalidId Thread does no exist or left blank
-	 * @throws NoPermissionLoggedout when logged out and guest do not have viewing rights
-	 * @throws NoPermissionLoggedin when account does not have permission to view this thread and post
-	 * @throws VBulletinAPIException when less common errors occur
-	 */
-	public Post thread_ViewPost(int threadid, int postid) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		ForumThread thread = thread_View(""+threadid, null, "1" , ""+postid, 0);
-		for(Post post : thread.posts){
-			if(post.postid == postid){
-				return post;
-			}
-		}
-		return null;
-	}
 	/**
 	 * @param threadid the thread to search
-	 *@return null when the post cannot be found in the thread
+	 * @return null when the post cannot be found in the thread
 	 * @throws InvalidId Thread does no exist or left blank
 	 * @throws NoPermissionLoggedout when logged out and guest do not have viewing rights
 	 * @throws NoPermissionLoggedin when account does not have permission to view this thread and post
@@ -1931,6 +1921,24 @@ public final class VBulletinAPI extends Thread{
 						return post;
 					}
 				}
+			}
+		}
+		return null;
+	}
+	/**Attempts to view a post residing in a thread. The correct threadid is required as well
+	 * @param threadid the thread the post resides in
+	 * @param postid the post to view
+	 * @return null when the post cannot be found in the thread
+	 * @throws InvalidId Thread does no exist or left blank
+	 * @throws NoPermissionLoggedout when logged out and guest do not have viewing rights
+	 * @throws NoPermissionLoggedin when account does not have permission to view this thread and post
+	 * @throws VBulletinAPIException when less common errors occur
+	 */
+	public Post thread_ViewPost(int threadid, int postid) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		ForumThread thread = thread_View(""+threadid, null, "1" , ""+postid, 0);
+		for(Post post : thread.posts){
+			if(post.postid == postid){
+				return post;
 			}
 		}
 		return null;
