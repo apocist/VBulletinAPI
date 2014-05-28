@@ -33,6 +33,8 @@ public final class VBulletinAPI extends Thread{
 		public int totalposts;
 		public int FIRSTPOSTID;
 		public int LASTPOSTID;
+		public int pagenumber;
+		public int perpage;
 		//public String forumrules;
 		public ArrayList<Post> posts = new ArrayList<Post>();
 	}
@@ -738,6 +740,16 @@ public final class VBulletinAPI extends Thread{
 				if(((LinkedTreeMap)response.get("response")).containsKey("LASTPOSTID")){
 					if(isInteger((String) ((LinkedTreeMap)response.get("response")).get("LASTPOSTID"))){
 						thread.LASTPOSTID = Integer.parseInt((String) ((LinkedTreeMap)response.get("response")).get("LASTPOSTID"));
+					}
+				}
+				if(((LinkedTreeMap)response.get("response")).containsKey("pagenumber")){
+					if(isInteger((String) ((LinkedTreeMap)response.get("response")).get("pagenumber"))){
+						thread.pagenumber = new Double((double) ((LinkedTreeMap)response.get("response")).get("pagenumber")).intValue();
+					}
+				}
+				if(((LinkedTreeMap)response.get("response")).containsKey("perpage")){
+					if(isInteger((String) ((LinkedTreeMap)response.get("response")).get("perpage"))){
+						thread.perpage = Integer.parseInt((String) ((LinkedTreeMap)response.get("response")).get("perpage"));
 					}
 				}
 				if(((LinkedTreeMap)response.get("response")).containsKey("postbits")){
