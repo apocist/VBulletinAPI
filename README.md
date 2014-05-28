@@ -16,6 +16,9 @@ Empty Inboxs<br>
 Send Private Messages<br>
 <br>
 Thread Creation<br>
+Thread View Posts(by page, postsperpage, and postid options)<br>
+Thread View Single Post(by postid and threadid)<br>
+Thread View Last Post(by threadid)<br>
 Thread Delete(not complete, but should be functional)<br>
 Thread Open(not complete, but should be functional)<br>
 Thread Close(not complete, but should be functional)<br>
