@@ -614,6 +614,8 @@ public final class VBulletinAPI extends Thread{
 				}
 			}
 		}
+		System.out.println("message all ->");
+		System.out.println(response.toString());
 		return messages;
 	}
 	/**Grabs the 'errormessage' from within the json pulled form callMethod()
@@ -743,12 +745,18 @@ public final class VBulletinAPI extends Thread{
 					}
 				}
 				if(((LinkedTreeMap)response.get("response")).containsKey("pagenumber")){
-					if(isInteger((String) ((LinkedTreeMap)response.get("response")).get("pagenumber"))){
+					if(((LinkedTreeMap)response.get("response")).get("pagenumber").getClass().getName().equals("java.lang.Double")){
 						thread.pagenumber = new Double((double) ((LinkedTreeMap)response.get("response")).get("pagenumber")).intValue();
+					}
+					else if(isInteger((String) ((LinkedTreeMap)response.get("response")).get("pagenumber"))){
+						thread.pagenumber = Integer.parseInt((String) ((LinkedTreeMap)response.get("response")).get("pagenumber"));
 					}
 				}
 				if(((LinkedTreeMap)response.get("response")).containsKey("perpage")){
-					if(isInteger((String) ((LinkedTreeMap)response.get("response")).get("perpage"))){
+					if(((LinkedTreeMap)response.get("response")).get("perpage").getClass().getName().equals("java.lang.Double")){
+						thread.perpage = new Double((double) ((LinkedTreeMap)response.get("response")).get("perpage")).intValue();
+					}
+					else if(isInteger((String) ((LinkedTreeMap)response.get("response")).get("perpage"))){
 						thread.perpage = Integer.parseInt((String) ((LinkedTreeMap)response.get("response")).get("perpage"));
 					}
 				}
@@ -759,6 +767,7 @@ public final class VBulletinAPI extends Thread{
 						for(LinkedTreeMap postHolder : postbits){
 
 							if(postHolder.containsKey("post")){
+								System.out.println("contains post");
 								Post post = new Post();
 								LinkedTreeMap postPost = (LinkedTreeMap) postHolder.get("post");
 								if(postPost.containsKey("postid")){
@@ -1735,7 +1744,7 @@ public final class VBulletinAPI extends Thread{
 		}
 		throw new NoConnectionException();
 	}
-	/**Attempts to view a thread and all the posts of page 1
+	/**Attempts to view a thread and all the posts of page 1. Number of posts per page varies on the account settings.
 	 * @param threadid the thread to view
 	 * @return
 	 * @throws InvalidId Thread does no exist or left blank
@@ -1744,35 +1753,39 @@ public final class VBulletinAPI extends Thread{
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
 	public ForumThread thread_View(int threadid) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		return thread_View(""+threadid, null);
+		return thread_View(""+threadid, null, null);
 	}
 	/**Attempts to view a thread and all the posts of which page the postid is specified is on.
 	 * @param threadid the thread to view
-	 * @param postid detrimines which page to view based on the post looking for
+	 * @param page detrimines which page to view.
+	 * @param perpage detrimines how many posts to view perpage(alters the results of the page parameter)
 	 * @return
 	 * @throws InvalidId Thread does no exist or left blank
 	 * @throws NoPermissionLoggedout when logged out and guest do not have viewing rights
 	 * @throws NoPermissionLoggedin when account does not have permission to view this thread
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public ForumThread thread_View(int threadid, int postid) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		return thread_View(""+threadid, ""+postid);
+	public ForumThread thread_View(int threadid, int page, int perpage) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		return thread_View(""+threadid, ""+page, ""+perpage);
 	}
 	/**Attempts to view a thread and all the posts of which page the postid is specified is on.
 	 * @param threadid the thread to view
-	 * @param postid detrimines which page to view based on the post looking for(leave null for page 1)
+	 * @param page detrimines which page to view.
+	 * @param perpage detrimines how many posts to view perpage(alters the results of the page parameter)
 	 * @return
 	 * @throws InvalidId Thread does no exist or left blank
 	 * @throws NoPermissionLoggedout when logged out and guest do not have viewing rights
 	 * @throws NoPermissionLoggedin when account does not have permission to view this thread
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public ForumThread thread_View(String threadid, String postid) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		return thread_View(threadid, postid, 0);
+	public ForumThread thread_View(String threadid, String page, String perpage) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		return thread_View(threadid, page, perpage, null, 0);
 	}
 	/**Attempts to view a thread and all the posts of which page the postid is specified is on.
 	 * @param threadid the thread to view
-	 * @param postid detrimines which page to view based on the post looking for(leave null for page 1)
+	 * @param page detrimines which page to view.
+	 * @param perpage detrimines how many posts to view perpage(alters the results of the page parameter)
+	 * @param postid detrimines which page to view based on postid, should not be used witht he page parameter
 	 * @param loop how many iretations it went through
 	 * @return
 	 * @throws InvalidId Thread does no exist or left blank
@@ -1780,30 +1793,32 @@ public final class VBulletinAPI extends Thread{
 	 * @throws NoPermissionLoggedin when account does not have permission to view this thread
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	private ForumThread thread_View(String threadid, String postid, int loop) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{//TODO view by page too(not just post)
+	private ForumThread thread_View(String threadid, String page, String perpage, String postid, int loop) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{//TODO view by page too(not just post)
 		if(IsConnected()){
 			ForumThread thread = null;
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
 			params.put("threadid", threadid);
 			if(postid != null){params.put("p", postid);}
+			if(page != null){params.put("page", page);}
+			if(perpage != null){params.put("perpage", perpage);}
 			if(loop < 4){//no inifinite loop by user
 				try {
 					thread = parseThread(callMethod("showthread", params, true));
 				} catch (InvalidAccessToken e) {
 					forum_Login();
 					if(IsLoggedin()){
-						return thread_View(threadid, postid, loop);
+						return thread_View(threadid, page, perpage, postid, loop);
 					}
 					throw e;
 				} catch (NoPermissionLoggedout e) {
 					forum_Login();
 					if(IsLoggedin()){
-						return thread_View(threadid, postid, loop);
+						return thread_View(threadid, page, perpage, postid, loop);
 					}
 					throw e;
 				} catch (InvalidAPISignature e) {
-					return thread_View(threadid, postid, loop);
+					return thread_View(threadid, page, perpage, postid, loop);
 				}
 				return thread;
 			}
@@ -1821,7 +1836,7 @@ public final class VBulletinAPI extends Thread{
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
 	public Post thread_ViewPost(int threadid, int postid) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		ForumThread thread = thread_View(threadid, postid);
+		ForumThread thread = thread_View(""+threadid, null, "1" , ""+postid, 0);
 		for(Post post : thread.posts){
 			if(post.postid == postid){
 				return post;
