@@ -26,7 +26,6 @@ import com.google.gson.reflect.TypeToken;		//Copyright 2008-2011 Google Inc. htt
 import com.google.gson.stream.JsonReader;		//Copyright 2008-2011 Google Inc. http://www.apache.org/licenses/LICENSE-2.0
 import com.inverseinnovations.VBulletinAPI.Exception.*;
 
-
 /** A class to provide an easy to use wrapper around the vBulletin REST API.*/
 public final class VBulletinAPI extends Thread{
 	public class ForumThread{
@@ -45,7 +44,7 @@ public final class VBulletinAPI extends Thread{
 		public String title;
 		public int userid;
 		public String username;
-		public String message;
+		public String message = "";
 
 		public void setUserid(String id){
 			if(isInteger(id)){
@@ -160,6 +159,21 @@ public final class VBulletinAPI extends Thread{
 		}
 		return result.toString();
 	}
+	/**Converts raw doubles and raw Strings to Int
+	 * @param obj
+	 * @return 0 if not a number
+	 */
+	private static int convertToInt(Object obj){
+		if(obj.getClass().getName().equals("java.lang.Double")){
+			return new Double((double) obj).intValue();
+		}
+		if(obj instanceof String){
+			if(isInteger((String) obj)){
+				return Integer.parseInt((String) obj);
+			}
+		}
+		return 0;
+	}
 	private boolean CONNECTED = false;
 	private boolean LOGGEDIN = false;
 	private String clientname;
@@ -253,20 +267,17 @@ public final class VBulletinAPI extends Thread{
 	 *             whatever reason.
 	 */
 	private LinkedTreeMap<String, Object> callMethod(String methodname,Map<String, String> params, boolean sign){// throws IOException{
-		LinkedTreeMap<String, Object> map = null;
+		LinkedTreeMap<String, Object> map = new LinkedTreeMap<String, Object>();
 
 		try{
 
 			StringBuffer queryStringBuffer = new StringBuffer("api_m=" + methodname);
 			SortedSet<String> keys = new TreeSet<String>(params.keySet());
 			for (String key : keys) {// ' " \ are unsafe
-				//queryStringBuffer.append("&" + key + "=" + URLEncoder.encode(params.get(key), "UTF-8"));
 				String value = querySafeString(params.get(key));
 				queryStringBuffer.append("&" + key + "=" + URLEncoder.encode(value, "UTF-8"));
 			}
 			if (sign) {
-				//System.out.println("encoded: "+queryStringBuffer.toString());
-				//queryStringBuffer.append("&api_sig="+ generateHash( (queryStringBuffer.toString() + apiAccessToken+ apiClientID + secret + apikey)).toLowerCase());
 				queryStringBuffer.append("&api_sig="+ MD5( (queryStringBuffer.toString() + getAPIAccessToken()+ apiClientID + getSecret() + getAPIkey())).toLowerCase());
 				if(DEBUG){System.out.println("encoded: "+queryStringBuffer.toString());}
 			}
@@ -285,7 +296,6 @@ public final class VBulletinAPI extends Thread{
 			conn.setDoInput(true);
 			DataOutputStream out = new DataOutputStream(conn.getOutputStream());
 			out.writeBytes(queryString);
-			//StringBuffer returnBuffer = new StringBuffer();
 			InputStream is = null;
 			try{
 				is = conn.getInputStream();
@@ -297,7 +307,13 @@ public final class VBulletinAPI extends Thread{
 					Gson gson = new Gson();
 					JsonReader reader = new JsonReader(new StringReader(json));
 					reader.setLenient(true);
-					map = gson.fromJson(reader,new TypeToken<Map<String, Object>>() {}.getType());
+					try{
+						map = gson.fromJson(reader,new TypeToken<Map<String, Object>>() {}.getType());
+					}
+					catch(java.lang.IllegalStateException e){
+						map = new LinkedTreeMap<String, Object>();
+						map.put("custom", new String("IllegalStateException"));
+					}
 				}
 
 			}
@@ -311,6 +327,10 @@ public final class VBulletinAPI extends Thread{
 			map = new LinkedTreeMap<String, Object>();
 			map.put("custom", new String("IOException"));
 		}
+		catch(java.lang.IllegalStateException e){
+			map = new LinkedTreeMap<String, Object>();
+			map.put("custom", new String("IllegalStateException"));
+		}
 		return map;
 	}
 	/**
@@ -322,8 +342,9 @@ public final class VBulletinAPI extends Thread{
 	 * @throws InvalidAccessToken
 	 * @throws APISocketTimeoutException
 	 * @throws APIIOException
+	 * @throws APIIllegalStateException
 	 */
-	private void errorsCommon(String errorMsg) throws InvalidAPISignature, NoPermissionLoggedout, NoPermissionLoggedin, InvalidAccessToken, APISocketTimeoutException, APIIOException{
+	private void errorsCommon(String errorMsg) throws InvalidAPISignature, NoPermissionLoggedout, NoPermissionLoggedin, InvalidAccessToken, APISocketTimeoutException, APIIOException, APIIllegalStateException{
 		if(errorMsg.equals("invalid_api_signature")){
 			throw new InvalidAPISignature();
 		}
@@ -341,6 +362,10 @@ public final class VBulletinAPI extends Thread{
 		}
 		else if(errorMsg.equals("IOException")){
 			throw new APIIOException();
+		}
+		else if(errorMsg.equals("IllegalStateException")){
+			if(DEBUG){System.out.println("ERROR IllegalStateException");}
+			throw new APIIllegalStateException();
 		}
 	}
 	/**
@@ -732,36 +757,23 @@ public final class VBulletinAPI extends Thread{
 	private ForumThread parseThread(LinkedTreeMap<String, Object> response) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		ForumThread thread = new ForumThread();
 		if(response != null){
+			System.out.println("hit response");
 			if(response.containsKey("response")){
 				if(((LinkedTreeMap)response.get("response")).containsKey("totalposts")){
 					thread.totalposts = new Double((double) ((LinkedTreeMap)response.get("response")).get("totalposts")).intValue();
 
 				}
 				if(((LinkedTreeMap)response.get("response")).containsKey("FIRSTPOSTID")){
-					if(isInteger((String) ((LinkedTreeMap)response.get("response")).get("FIRSTPOSTID"))){
-						thread.FIRSTPOSTID = Integer.parseInt((String) ((LinkedTreeMap)response.get("response")).get("FIRSTPOSTID"));
-					}
+					thread.FIRSTPOSTID = convertToInt(((LinkedTreeMap)response.get("response")).get("FIRSTPOSTID"));
 				}
 				if(((LinkedTreeMap)response.get("response")).containsKey("LASTPOSTID")){
-					if(isInteger((String) ((LinkedTreeMap)response.get("response")).get("LASTPOSTID"))){
-						thread.LASTPOSTID = Integer.parseInt((String) ((LinkedTreeMap)response.get("response")).get("LASTPOSTID"));
-					}
+					thread.LASTPOSTID = convertToInt(((LinkedTreeMap)response.get("response")).get("LASTPOSTID"));
 				}
 				if(((LinkedTreeMap)response.get("response")).containsKey("pagenumber")){
-					if(((LinkedTreeMap)response.get("response")).get("pagenumber").getClass().getName().equals("java.lang.Double")){
-						thread.pagenumber = new Double((double) ((LinkedTreeMap)response.get("response")).get("pagenumber")).intValue();
-					}
-					else if(isInteger((String) ((LinkedTreeMap)response.get("response")).get("pagenumber"))){
-						thread.pagenumber = Integer.parseInt((String) ((LinkedTreeMap)response.get("response")).get("pagenumber"));
-					}
+					thread.pagenumber = convertToInt(((LinkedTreeMap)response.get("response")).get("pagenumber"));
 				}
 				if(((LinkedTreeMap)response.get("response")).containsKey("perpage")){
-					if(((LinkedTreeMap)response.get("response")).get("perpage").getClass().getName().equals("java.lang.Double")){
-						thread.perpage = new Double((double) ((LinkedTreeMap)response.get("response")).get("perpage")).intValue();
-					}
-					else if(isInteger((String) ((LinkedTreeMap)response.get("response")).get("perpage"))){
-						thread.perpage = Integer.parseInt((String) ((LinkedTreeMap)response.get("response")).get("perpage"));
-					}
+					thread.perpage = convertToInt(((LinkedTreeMap)response.get("response")).get("perpage"));
 				}
 				if(((LinkedTreeMap)response.get("response")).containsKey("postbits")){
 					if(((LinkedTreeMap)response.get("response")).get("postbits") instanceof ArrayList){//multiple posts
@@ -772,9 +784,7 @@ public final class VBulletinAPI extends Thread{
 								Post post = new Post();
 								LinkedTreeMap postPost = (LinkedTreeMap) postHolder.get("post");
 								if(postPost.containsKey("postid")){
-									if(isInteger((String) postPost.get("postid"))){
-										post.postid = Integer.parseInt((String) postPost.get("postid"));
-									}
+									post.postid = convertToInt(postPost.get("postid"));
 								}
 								if(postPost.containsKey("posttime")){
 									if(isInteger((String) postPost.get("posttime"))){
@@ -782,14 +792,10 @@ public final class VBulletinAPI extends Thread{
 									}
 								}
 								if(postPost.containsKey("threadid")){
-									if(isInteger((String) postPost.get("threadid"))){
-										post.threadid = Integer.parseInt((String) postPost.get("threadid"));
-									}
+									post.threadid = convertToInt(postPost.get("threadid"));
 								}
 								if(postPost.containsKey("userid")){
-									if(isInteger((String) postPost.get("userid"))){
-										post.userid = Integer.parseInt((String) postPost.get("userid"));
-									}
+									post.userid = convertToInt(postPost.get("userid"));
 								}
 								if(postPost.containsKey("username")){
 									post.username = (String) postPost.get("username");
@@ -809,13 +815,13 @@ public final class VBulletinAPI extends Thread{
 									post.title = (String) postPost.get("title");
 								}
 								if(postPost.containsKey("isfirstshown")){
-									if((double) postPost.get("isfirstshown") == 1.0){
+									if(convertToInt(postPost.get("isfirstshown")) == 1){
 										post.isfirstshown = true;
 									}
 									else{post.isfirstshown = false;}
 								}
 								if(postPost.containsKey("islastshown")){
-									if((double) postPost.get("islastshown") == 1.0){
+									if(convertToInt(postPost.get("islastshown")) == 1){
 										post.islastshown = true;
 									}
 									else{post.islastshown = false;}
@@ -834,14 +840,13 @@ public final class VBulletinAPI extends Thread{
 						}
 					}
 					else if(((LinkedTreeMap)response.get("response")).get("postbits") instanceof LinkedTreeMap){//single post
+						System.out.println("postbits is map");
 						LinkedTreeMap postHolder = (LinkedTreeMap) ((LinkedTreeMap)response.get("response")).get("postbits");
 						if(postHolder.containsKey("post")){
 							Post post = new Post();
 							LinkedTreeMap postPost = (LinkedTreeMap) postHolder.get("post");
 							if(postPost.containsKey("postid")){
-								if(isInteger((String) postPost.get("postid"))){
-									post.postid = Integer.parseInt((String) postPost.get("postid"));
-								}
+								post.postid = convertToInt(postPost.get("postid"));
 							}
 							if(postPost.containsKey("posttime")){
 								if(isInteger((String) postPost.get("posttime"))){
@@ -849,14 +854,10 @@ public final class VBulletinAPI extends Thread{
 								}
 							}
 							if(postPost.containsKey("threadid")){
-								if(isInteger((String) postPost.get("threadid"))){
-									post.threadid = Integer.parseInt((String) postPost.get("threadid"));
-								}
+								post.threadid = convertToInt(postPost.get("threadid"));
 							}
 							if(postPost.containsKey("userid")){
-								if(isInteger((String) postPost.get("userid"))){
-									post.userid = Integer.parseInt((String) postPost.get("userid"));
-								}
+								post.userid = convertToInt(postPost.get("userid"));
 							}
 							if(postPost.containsKey("username")){
 								post.username = (String) postPost.get("username");
@@ -876,13 +877,13 @@ public final class VBulletinAPI extends Thread{
 								post.title = (String) postPost.get("title");
 							}
 							if(postPost.containsKey("isfirstshown")){
-								if((double) postPost.get("isfirstshown") == 1.0){
+								if(convertToInt(postPost.get("isfirstshown")) == 1){
 									post.isfirstshown = true;
 								}
 								else{post.isfirstshown = false;}
 							}
 							if(postPost.containsKey("islastshown")){
-								if((double) postPost.get("islastshown") == 1.0){
+								if(convertToInt(postPost.get("islastshown")) == 1){
 									post.islastshown = true;
 								}
 								else{post.islastshown = false;}
@@ -909,8 +910,8 @@ public final class VBulletinAPI extends Thread{
 						if(theError.equals("redirect_postthanks")){//this is for newthread and newpost
 							if(response.containsKey("show")){
 								if(((LinkedTreeMap)response.get("show")).containsKey("threadid")){
-									theError = (String) ((LinkedTreeMap)response.get("show")).get("threadid");
-									theError += " "+(double) ((LinkedTreeMap)response.get("show")).get("postid");
+									theError = ""+convertToInt(((LinkedTreeMap)response.get("show")).get("threadid"));
+									theError += " "+convertToInt(((LinkedTreeMap)response.get("show")).get("postid"));
 								}
 							}
 						}
@@ -1093,6 +1094,9 @@ public final class VBulletinAPI extends Thread{
 			if(loop < 4){//no inifinite loop by user
 				try {
 					msgList = parseMessages(callMethod("private_messagelist", params, true));
+					for(Message msg: msgList){
+						msg.message = pm_ViewPM(msg.pmid);
+					}
 				} catch (InvalidAccessToken e) {
 					forum_Login();
 					if(IsLoggedin()){
