@@ -303,14 +303,20 @@ public final class VBulletinAPI extends Thread{
 			finally{
 				if(is != null){
 					String json = IOUtils.toString( is );
+					//need to remove everything before {
+					json = json.substring(json.indexOf("{"));
 
 					Gson gson = new Gson();
 					JsonReader reader = new JsonReader(new StringReader(json));
 					reader.setLenient(true);
+					if(DEBUG){System.out.println("got json");}
 					try{
 						map = gson.fromJson(reader,new TypeToken<Map<String, Object>>() {}.getType());
+						if(DEBUG){System.out.println("json to map");}
 					}
-					catch(java.lang.IllegalStateException e){
+					catch(Exception e){
+						System.out.println(json);
+						e.printStackTrace();
 						map = new LinkedTreeMap<String, Object>();
 						map.put("custom", new String("IllegalStateException"));
 					}
@@ -658,6 +664,10 @@ public final class VBulletinAPI extends Thread{
 		String theReturn = null;
 		String className = null;
 		if(response != null){
+			if(DEBUG){
+				System.out.println("all ->");
+				System.out.println(response.toString());
+			}
 			if(response.containsKey("response")){
 				//errormessage
 				if(((LinkedTreeMap)response.get("response")).containsKey("errormessage")){
@@ -737,10 +747,7 @@ public final class VBulletinAPI extends Thread{
 				theReturn = (String) response.get("custom");
 			}
 			//testing this:
-			if(DEBUG){
-				System.out.println("all ->");
-				System.out.println(response.toString());
-			}
+
 		}
 		//Base.Console.debug("SC2Mafia API return error: "+theReturn);
 		return theReturn;
