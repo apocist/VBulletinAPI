@@ -304,15 +304,15 @@ public final class VBulletinAPI extends Thread{
 				if(is != null){
 					String json = IOUtils.toString( is );
 					//need to remove everything before {
-					json = json.substring(json.indexOf("{"));
+					if(json.contains("{")){
+						json = json.substring(json.indexOf("{"));
+					}
 
 					Gson gson = new Gson();
 					JsonReader reader = new JsonReader(new StringReader(json));
 					reader.setLenient(true);
-					if(DEBUG){System.out.println("got json");}
 					try{
 						map = gson.fromJson(reader,new TypeToken<Map<String, Object>>() {}.getType());
-						if(DEBUG){System.out.println("json to map");}
 					}
 					catch(Exception e){
 						System.out.println(json);
@@ -332,10 +332,6 @@ public final class VBulletinAPI extends Thread{
 		catch(IOException e){
 			map = new LinkedTreeMap<String, Object>();
 			map.put("custom", new String("IOException"));
-		}
-		catch(java.lang.IllegalStateException e){
-			map = new LinkedTreeMap<String, Object>();
-			map.put("custom", new String("IllegalStateException"));
 		}
 		return map;
 	}
