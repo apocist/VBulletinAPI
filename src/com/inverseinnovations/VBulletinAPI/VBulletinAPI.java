@@ -383,6 +383,9 @@ public final class VBulletinAPI extends Thread{
 					setLoggedin(true);
 					return true;
 				}
+				else if(errorMsg.equals("badlogin_strikes_passthru")){
+					break;
+				}
 			}
 			setLoggedin(false);
 			if(errorMsg.equals("badlogin_strikes_passthru")){
@@ -407,6 +410,38 @@ public final class VBulletinAPI extends Thread{
 		params.put("vb_login_username", username);
 		params.put("vb_login_password", password);
 		return callMethod("login_login", params, true);
+	}
+	/**
+	 * NOT COMPLETE - functionality is unknown
+	 * @return
+	 * @throws BadCredentials
+	 * @throws VBulletinAPIException
+	 */
+	public boolean forum_Logout() throws BadCredentials, VBulletinAPIException{
+		if(IsConnected()){
+			String errorMsg = "";
+			for(int i = 0;i < 3;i++){
+				HashMap<String, String> params = new HashMap<String, String>();
+				params.put("vb_login_username", username);
+				params.put("vb_login_password", password);
+				errorMsg = parseResponse(callMethod("login_logout", params, true));if(errorMsg == null){errorMsg = "";}
+				if(errorMsg.equals("redirect_login")){//if login is succesful
+					setConnected(true);
+					setLoggedin(true);
+					return true;
+				}
+				else if(errorMsg.equals("badlogin_strikes_passthru")){
+					break;
+				}
+			}
+			setLoggedin(false);
+			if(errorMsg.equals("badlogin_strikes_passthru")){
+				throw new BadCredentials();
+			}
+			errorsCommon(errorMsg);
+			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
+		}
+		throw new NoConnectionException();
 	}
 	/**Grabs all data with this username
 	 * Returning:
