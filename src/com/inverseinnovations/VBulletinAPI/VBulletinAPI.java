@@ -1,5 +1,6 @@
 package com.inverseinnovations.VBulletinAPI;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,6 +9,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.ArrayList;
@@ -17,8 +19,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
-import org.apache.commons.io.IOUtils;
 
 import com.google.gson.Gson;					//Copyright 2008-2011 Google Inc. http://www.apache.org/licenses/LICENSE-2.0
 import com.google.gson.internal.LinkedTreeMap;	//Copyright 2008-2011 Google Inc. http://www.apache.org/licenses/LICENSE-2.0
@@ -186,6 +186,22 @@ public final class VBulletinAPI extends Thread{
 	private String secret;
 	private String username;
 	private String password;
+
+	/**
+	 * Returns a String built from the InputStream
+	 * @param inputStream
+	 * @return
+	 * @throws IOException
+	 */
+	private String inputStreamToString(InputStream inputStream) throws IOException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		byte[] buffer = new byte[1024];
+		int length = 0;
+		while ((length = inputStream.read(buffer)) != -1) {
+			baos.write(buffer, 0, length);
+		}
+		return new String(baos.toByteArray(), Charset.defaultCharset());
+	}
 	/**
 	 * Instantiates a new vBulletin API wrapper. This will initialise the API
 	 * connection as well, with OS name and version pulled from property files
@@ -302,7 +318,8 @@ public final class VBulletinAPI extends Thread{
 			}
 			finally{
 				if(is != null){
-					String json = IOUtils.toString( is );
+					String json = inputStreamToString(is);
+
 					//need to remove everything before {
 					if(json.contains("{")){
 						json = json.substring(json.indexOf("{"));

@@ -13,7 +13,6 @@
     <path id="VBulletinAPI.classpath">
         <pathelement location="bin"/>
         <pathelement location="lib/gson-2.2.4.jar"/>
-        <pathelement location="lib/commons-io-2.4.jar"/>
     </path>
     <target name="init">
         <mkdir dir="bin"/>
