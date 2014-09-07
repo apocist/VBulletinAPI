@@ -68,6 +68,13 @@ public final class VBulletinAPI extends Thread{
 		public String message_plain;
 		public String message_bbcode;
 	}
+	public class Member{
+		public String username;
+		public String userid;
+		public String avatarurl;
+		public String usertitle;
+		public String joindate;
+	}
 	final public static double VERSION = 0.3;
 	final public static boolean DEBUG = true;
 	/**
@@ -460,17 +467,42 @@ public final class VBulletinAPI extends Thread{
 		}
 		throw new NoConnectionException();
 	}
-	/**Grabs all data with this username
-	 * Returning:
-	 * username
-	 * forumid
-	 * forumjoindate
-	 * avatarurl
-	 * */
-	public HashMap<String, String> forum_ViewMember(String user){
-		HashMap<String, String> params = new HashMap<String, String>();
-		params.put("username", user);
-		return parseViewMember(callMethod("member", params, true));
+	/**Returns Member information
+	 * @return Member
+	 * @throws NoPermissionLoggedout when only logged in members may view
+	 * @throws VBulletinAPIException when less common errors occur
+	 */
+	public Member forum_ViewMember(String user)throws NoPermissionLoggedout, VBulletinAPIException{
+		return forum_ViewMember(user, 0);
+	}
+	/**Returns Member information
+	 * @return Member
+	 * @throws NoPermissionLoggedout when only logged in members may view
+	 * @throws VBulletinAPIException when less common errors occur
+	 */
+	private Member forum_ViewMember(String user, int loop) throws NoPermissionLoggedout, VBulletinAPIException{
+		if(IsConnected()){
+			Member member = null;
+			loop++;
+			HashMap<String, String> params = new HashMap<String, String>();
+			params.put("username", user);
+			if(loop < 4){//no inifinite loop by user
+				try {
+					member = parseViewMember(callMethod("member", params, true));
+				} catch (InvalidAccessToken | NoPermissionLoggedout e) {
+					forum_Login();
+					if(IsLoggedin()){
+						return forum_ViewMember(user, loop);
+					}
+					throw e;
+				} catch (InvalidAPISignature e) {
+					return forum_ViewMember(user, loop);
+				}
+				return member;
+			}
+			throw new VBulletinAPIException("vBulletin API Unknown Error ");
+		}
+		throw new NoConnectionException();
 	}
 	/**
 	 * Gets the API access token.
@@ -812,7 +844,6 @@ public final class VBulletinAPI extends Thread{
 	private ForumThread parseThread(LinkedTreeMap<String, Object> response) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		ForumThread thread = new ForumThread();
 		if(response != null){
-			System.out.println("hit response");
 			if(response.containsKey("response")){
 				if(((LinkedTreeMap)response.get("response")).containsKey("totalposts")){
 					thread.totalposts = new Double((double) ((LinkedTreeMap)response.get("response")).get("totalposts")).intValue();
@@ -1004,44 +1035,74 @@ public final class VBulletinAPI extends Thread{
 	 * avatarurl
 	 * @param response from viewMember (callMethod)
 	 * @return HashMap<String, String>
+	 * @throws APIIllegalStateException
+	 * @throws APIIOException
+	 * @throws APISocketTimeoutException
+	 * @throws InvalidAccessToken
+	 * @throws NoPermissionLoggedin
+	 * @throws NoPermissionLoggedout
+	 * @throws InvalidAPISignature
 	 */
 	@SuppressWarnings("rawtypes")
-	private HashMap<String, String> parseViewMember(LinkedTreeMap<String, Object> response){
-		HashMap<String, String> theReturn = new HashMap<String, String>();
-		theReturn.put("forumid", null);
-		theReturn.put("forumjoindate", null);
-		theReturn.put("avatarurl", null);
-		String className = null;
-		if(response.containsKey("response")){
-			//response -> prepared
-			if(((LinkedTreeMap)response.get("response")).containsKey("prepared")){
-				className = ((LinkedTreeMap)response.get("response")).get("prepared").getClass().getName();
-				if(className.equals("com.google.gson.internal.LinkedTreeMap")){
-					LinkedTreeMap prepared = (LinkedTreeMap) ((LinkedTreeMap)response.get("response")).get("prepared");
-					if(prepared.containsKey("username")){
-						className = prepared.get("username").getClass().getName();
-						if(className.equals("java.lang.String")){
-							theReturn.put("username", (String) prepared.get("username"));
+	private Member parseViewMember(LinkedTreeMap<String, Object> response) throws NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		Member theReturn = new Member();
+		if(response != null){
+			String className = null;
+			if(response.containsKey("response")){
+				//response -> prepared
+				if(((LinkedTreeMap)response.get("response")).containsKey("prepared")){
+					className = ((LinkedTreeMap)response.get("response")).get("prepared").getClass().getName();
+					if(className.equals("com.google.gson.internal.LinkedTreeMap")){
+						LinkedTreeMap prepared = (LinkedTreeMap) ((LinkedTreeMap)response.get("response")).get("prepared");
+						if(prepared.containsKey("username")){
+							className = prepared.get("username").getClass().getName();
+							if(className.equals("java.lang.String")){
+								theReturn.username = (String) prepared.get("username");
+							}
+						}
+						if(prepared.containsKey("userid")){
+							className = prepared.get("userid").getClass().getName();
+							if(className.equals("java.lang.String")){
+								theReturn.userid = (String) prepared.get("userid");
+							}
+						}
+						if(prepared.containsKey("public String username;")){
+							className = prepared.get("joindate").getClass().getName();
+							if(className.equals("java.lang.String")){
+								theReturn.joindate = (String) prepared.get("joindate");
+							}
+						}
+						if(prepared.containsKey("avatarurl")){
+							className = prepared.get("avatarurl").getClass().getName();
+							if(className.equals("java.lang.String")){
+								theReturn.avatarurl = (String) prepared.get("avatarurl");
+							}
 						}
 					}
-					if(prepared.containsKey("userid")){
-						className = prepared.get("userid").getClass().getName();
-						if(className.equals("java.lang.String")){
-							theReturn.put("forumid", (String) prepared.get("userid"));
+				}
+				if(((LinkedTreeMap)response.get("response")).containsKey("errormessage")){
+					String theError = "";
+					className = ((LinkedTreeMap)response.get("response")).get("errormessage").getClass().getName();
+					if(className.equals("java.lang.String")){
+						theError = ((String) ((LinkedTreeMap)response.get("response")).get("errormessage"));
+						if(theError.equals("redirect_postthanks")){//this is for newthread and newpost
+							if(response.containsKey("show")){
+								if(((LinkedTreeMap)response.get("show")).containsKey("threadid")){
+									theError = ""+convertToInt(((LinkedTreeMap)response.get("show")).get("threadid"));
+									theError += " "+convertToInt(((LinkedTreeMap)response.get("show")).get("postid"));
+								}
+							}
 						}
 					}
-					if(prepared.containsKey("joindate")){
-						className = prepared.get("joindate").getClass().getName();
-						if(className.equals("java.lang.String")){
-							theReturn.put("forumjoindate", (String) prepared.get("joindate"));
+					else if(className.equals("java.util.ArrayList")){
+						Object[] errors = ((ArrayList) ((LinkedTreeMap)response.get("response")).get("errormessage")).toArray();
+						if(errors.length > 0){
+							theError = errors[0].toString();
 						}
 					}
-					if(prepared.containsKey("avatarurl")){
-						className = prepared.get("avatarurl").getClass().getName();
-						if(className.equals("java.lang.String")){
-							theReturn.put("avatarurl", (String) prepared.get("avatarurl"));
-						}
-					}
+					errorsCommon(theError);
+					System.out.println("responseError  response -> errormessage type unknown: "+className);
+					throw new VBulletinAPIException("vBulletin API Unknown Error - "+className);
 				}
 			}
 		}
@@ -1152,13 +1213,7 @@ public final class VBulletinAPI extends Thread{
 					for(Message msg: msgList){
 						msg.message = pm_ViewPM(msg.pmid);
 					}
-				} catch (InvalidAccessToken e) {
-					forum_Login();
-					if(IsLoggedin()){
-						return pm_ListPMs(loop);
-					}
-					throw e;
-				} catch (NoPermissionLoggedout e) {
+				} catch (InvalidAccessToken | NoPermissionLoggedout e) {
 					forum_Login();
 					if(IsLoggedin()){
 						return pm_ListPMs(loop);
