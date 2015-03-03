@@ -210,9 +210,9 @@ public final class VBulletinAPI extends Thread{
 		return new String(baos.toByteArray(), Charset.defaultCharset());
 	}
 	/**
-	 * Instantiates a new vBulletin API wrapper. This will initialise the API
+	 * Instantiates a new vBulletin API wrapper. This will initialize the API
 	 * connection as well, with OS name and version pulled from property files
-	 * and unique ID generated from the hashcode of the system properties.
+	 * and unique ID generated from the hash code of the system properties.
 	 * Use isConnected() to verify results.
 	 *
 	 * @param apiURL
@@ -224,9 +224,9 @@ public final class VBulletinAPI extends Thread{
 		this(null, null, apiURL, apikey, "vBulletinAPI", VERSION+"");
 	}
 	/**
-	 * Instantiates a new vBulletin API wrapper. This will initialise the API
+	 * Instantiates a new vBulletin API wrapper. This will initialize the API
 	 * connection as well, with OS name and version pulled from property files
-	 * and unique ID generated from the hashcode of the system properties.
+	 * and unique ID generated from the hash code of the system properties.
 	 * Use isConnected() to verify results.
 	 *
 	 * @param apiURL
@@ -242,10 +242,10 @@ public final class VBulletinAPI extends Thread{
 		this(null, null, apiURL, apikey, clientname, clientversion);
 	}
 	/**
-	 * Instantiates a new vBulletin API wrapper. This will initialise the API
+	 * Instantiates a new vBulletin API wrapper. This will initialize the API
 	 * connection as well, with OS name and version pulled from property files
-	 * and unique ID generated from the hashcode of the system properties.
-	 * Will attempt to login with provided credientals.
+	 * and unique ID generated from the hash code of the system properties.
+	 * Will attempt to login with provided credentals.
 	 * Use isConnected() and isLoggedin() to verify results.
 	 *
 	 * @param username
@@ -402,7 +402,7 @@ public final class VBulletinAPI extends Thread{
 			String errorMsg = "";
 			for(int i = 0;i < 3;i++){
 				errorMsg = parseResponse(forum_LoginDirect());if(errorMsg == null){errorMsg = "";}
-				if(errorMsg.equals("redirect_login")){//if login is succesful
+				if(errorMsg.equals("redirect_login")){//if login is successful
 					setConnected(true);
 					setLoggedin(true);
 					return true;
@@ -420,11 +420,11 @@ public final class VBulletinAPI extends Thread{
 		}
 		throw new NoConnectionException();
 	}
-	/**Login using the preset credientals*/
+	/**Login using the preset credentials*/
 	private LinkedTreeMap<String, Object> forum_LoginDirect(){
 		return forum_LoginDirect(this.username, this.password);
 	}
-	/**Login using defined credientals
+	/**Login using defined credentials
 	 * @param username
 	 * @param password
 	 * @return
@@ -449,7 +449,7 @@ public final class VBulletinAPI extends Thread{
 				params.put("vb_login_username", username);
 				params.put("vb_login_password", password);
 				errorMsg = parseResponse(callMethod("login_logout", params, true));if(errorMsg == null){errorMsg = "";}
-				if(errorMsg.equals("redirect_login")){//if login is succesful
+				if(errorMsg.equals("redirect_login")){//if login is successful
 					setConnected(true);
 					setLoggedin(true);
 					return true;
@@ -835,7 +835,7 @@ public final class VBulletinAPI extends Thread{
 	/**Returns a Thread containing all the Posts within(or specified)
 	 * @param response
 	 * @return
-	 * @throws InvalidId ThreadID missing or nonexistant
+	 * @throws InvalidId ThreadID missing or nonexistent
 	 * @throws NoPermissionLoggedout
 	 * @throws NoPermissionLoggedin
 	 * @throws VBulletinAPIException All generic or unknown errors
@@ -1115,7 +1115,7 @@ public final class VBulletinAPI extends Thread{
 	/**Attempts to empty the primary PM Inbox
 	 * @param folderid which folder to empty
 	 * @return true on success
-	 * @throws InvalidId on non existant Private Message Folder
+	 * @throws InvalidId on non existent Private Message Folder
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to empty private message folders
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1126,7 +1126,7 @@ public final class VBulletinAPI extends Thread{
 	/**Attempts to empty a PM Inbox. folderid 0 is the primary inbox.
 	 * @param folderid which folder to empty
 	 * @return true on success
-	 * @throws InvalidId on non existant Private Message Folder
+	 * @throws InvalidId on non existent Private Message Folder
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to empty private message folders
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1138,7 +1138,7 @@ public final class VBulletinAPI extends Thread{
 	 * @param folderid which folder to empty
 	 * @param dateToDelete delete all before this date(forum time)
 	 * @return true on success
-	 * @throws InvalidId on non existant Private Message Folder
+	 * @throws InvalidId on non existent Private Message Folder
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to empty private message folders
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1151,7 +1151,7 @@ public final class VBulletinAPI extends Thread{
 	 * @param dateToDelete delete all before this date(forum time)
 	 * @param loop how many iretations it went through
 	 * @return true on success
-	 * @throws InvalidId on non existant Private Message Folder
+	 * @throws InvalidId on non existent Private Message Folder
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to empty private message folders
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1165,7 +1165,7 @@ public final class VBulletinAPI extends Thread{
 			params.put("dateline", dateToDelete);
 			params.put("folderid", folderid);
 			errorMsg = parseResponse(callMethod("private_confirmemptyfolder", params, true));
-			if(loop < 4){//no inifinite loop by user
+			if(loop < 4){//no infinite loop by user
 				if(errorMsg != null){
 					if(errorMsg.equals("pm_messagesdeleted")){//success
 						return true;
@@ -1207,7 +1207,7 @@ public final class VBulletinAPI extends Thread{
 			ArrayList<Message> msgList = new ArrayList<Message>();
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
-			if(loop < 4){//no inifinite loop by user
+			if(loop < 4){//no infinite loop by user
 				try {
 					msgList = parseMessages(callMethod("private_messagelist", params, true));
 					for(Message msg: msgList){
@@ -1264,7 +1264,7 @@ public final class VBulletinAPI extends Thread{
 	 * @param title subject
 	 * @param message
 	 * @param signature post signature
-	 * @param loop how many iretations it went through
+	 * @param loop how many iterations it went through
 	 * @return "pm_messagesent" on success
 	 * @throws PMRecipTurnedOff when the recipient is not allowing private messages
 	 * @throws PMRecipientsNotFound when the user does not exist
@@ -1282,7 +1282,7 @@ public final class VBulletinAPI extends Thread{
 			params.put("recipients", user);
 			if(signature){params.put("signature", "1");}else{params.put("signature", "0");}
 			errorMsg = parseResponse(callMethod("private_insertpm", params, true));
-			if(loop < 4){//no inifinite loop by user
+			if(loop < 4){//no infinite loop by user
 				if(errorMsg != null){
 					if(errorMsg.equals("pm_messagesent")){
 						return true;
@@ -1313,7 +1313,7 @@ public final class VBulletinAPI extends Thread{
 	/**Grabs the message from the PM specified by the pmID
 	 * @param pmId
 	 * @return message text as String
-	 * @throws InvalidId on non existant Private Message
+	 * @throws InvalidId on non existent Private Message
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
@@ -1322,9 +1322,9 @@ public final class VBulletinAPI extends Thread{
 	}
 	/**Grabs the message from the PM specified by the pmID
 	 * @param pmId
-	 * @param loop increasing int to prevent inifinite loops
+	 * @param loop increasing int to prevent infinite loops
 	 * @return message text as String
-	 * @throws InvalidId on non existant Private Message
+	 * @throws InvalidId on non existent Private Message
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
@@ -1336,7 +1336,7 @@ public final class VBulletinAPI extends Thread{
 				HashMap<String, String> params = new HashMap<String, String>();
 				params.put("pmid", pmId);
 				errorMsg = parseResponse(callMethod("private_showpm", params, true));
-				if(loop < 4){//no inifinite loop by user
+				if(loop < 4){//no infinite loop by user
 					if(errorMsg != null){
 						if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
 							forum_Login();
@@ -1364,9 +1364,9 @@ public final class VBulletinAPI extends Thread{
 	/**Attempts to edit a post based on the post id, does not post the user's signature
 	 * @param postid
 	 * @param message
-	 * @return true on successs
+	 * @return true on success
 	 * @throws ThreadClosed when attempting to edit a post in a closed thread
-	 * @throws InvalidId on non existant Post
+	 * @throws InvalidId on non existent Post
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to edit this post
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1378,9 +1378,9 @@ public final class VBulletinAPI extends Thread{
 	 * @param postid
 	 * @param message
 	 * @param signature post signature
-	 * @return true on successs
+	 * @return true on success
 	 * @throws ThreadClosed when attempting to edit a post in a closed thread
-	 * @throws InvalidId on non existant Post
+	 * @throws InvalidId on non existent Post
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to edit this post
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1392,9 +1392,9 @@ public final class VBulletinAPI extends Thread{
 	 * @param postid
 	 * @param message
 	 * @param signature post signature
-	 * @return true on successs
+	 * @return true on success
 	 * @throws ThreadClosed when attempting to edit a post in a closed thread
-	 * @throws InvalidId on non existant Post
+	 * @throws InvalidId on non existent Post
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to edit this post
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1406,10 +1406,10 @@ public final class VBulletinAPI extends Thread{
 	 * @param postid
 	 * @param message
 	 * @param signature post signature
-	 * @param loop how many iretations it went through
-	 * @return true on successs
+	 * @param loop how many iterations it went through
+	 * @return true on success
 	 * @throws ThreadClosed when attempting to edit a post in a closed thread
-	 * @throws InvalidId on non existant Post
+	 * @throws InvalidId on non existent Post
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to edit this post
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1455,7 +1455,7 @@ public final class VBulletinAPI extends Thread{
 	 * @param message
 	 * @return int[0] = threadid / int[1] = postid
 	 * @throws ThreadClosed when attempting to post in a closed thread
-	 * @throws InvalidId on non existant Thread
+	 * @throws InvalidId on non existent Thread
 	 * @throws NoPermissionLoggedout when logged out, and does not accept annon posts
 	 * @throws NoPermissionLoggedin when account does not have permission to post in this thread
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1469,7 +1469,7 @@ public final class VBulletinAPI extends Thread{
 	 * @param signature post signature
 	 * @return int[0] = threadid / int[1] = postid
 	 * @throws ThreadClosed when attempting to post in a closed thread
-	 * @throws InvalidId on non existant Thread
+	 * @throws InvalidId on non existent Thread
 	 * @throws NoPermissionLoggedout when logged out, and does not accept annon posts
 	 * @throws NoPermissionLoggedin when account does not have permission to post in this thread
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1482,7 +1482,7 @@ public final class VBulletinAPI extends Thread{
 	 * @param message
 	 * @return int[0] = threadid / int[1] = postid
 	 * @throws ThreadClosed when attempting to post in a closed thread
-	 * @throws InvalidId on non existant Thread
+	 * @throws InvalidId on non existent Thread
 	 * @throws NoPermissionLoggedout when logged out, and does not accept annon posts
 	 * @throws NoPermissionLoggedin when account does not have permission to post in this thread
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1494,10 +1494,10 @@ public final class VBulletinAPI extends Thread{
 	 * @param threadid
 	 * @param message
 	 * @param signature post signature
-	 * @param loop how many iretations it went through
+	 * @param loop how many iterations it went through
 	 * @return int[0] = threadid / int[1] = postid
 	 * @throws ThreadClosed when attempting to post in a closed thread
-	 * @throws InvalidId on non existant Thread
+	 * @throws InvalidId on non existent Thread
 	 * @throws NoPermissionLoggedout when logged out, and does not accept annon posts
 	 * @throws NoPermissionLoggedin when account does not have permission to post in this thread
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1641,7 +1641,7 @@ public final class VBulletinAPI extends Thread{
 	/**Attempts to close a Thread in the forum
 	 * @param threadid
 	 * @return true on success
-	 * @throws InvalidId on non existant Thread
+	 * @throws InvalidId on non existent Thread
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to close own or other's threads
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1652,7 +1652,7 @@ public final class VBulletinAPI extends Thread{
 	/**Attempts to close a Thread in the forum
 	 * @param threadid
 	 * @return true on success
-	 * @throws InvalidId on non existant Thread
+	 * @throws InvalidId on non existent Thread
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to close own or other's threads
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1664,7 +1664,7 @@ public final class VBulletinAPI extends Thread{
 	 * @param threadid
 	 * @param loop
 	 * @return true on success
-	 * @throws InvalidId on non existant Thread
+	 * @throws InvalidId on non existent Thread
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to close own or other's threads
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1676,7 +1676,7 @@ public final class VBulletinAPI extends Thread{
 			HashMap<String, String> params = new HashMap<String, String>();
 			params.put("threadid", threadid);
 			errorMsg = parseResponse(callMethod("inlinemod_close", params, true));
-			if(loop < 4){//no inifinite loop by user
+			if(loop < 4){//no infinite loop by user
 				if(errorMsg != null){
 					if(errorMsg.length() > 0){
 						if(errorMsg.equals("something...need success")){//success//TODO need the success result....
@@ -1705,7 +1705,7 @@ public final class VBulletinAPI extends Thread{
 	/**Attempts to delete a Thread in the forum
 	 * @param threadid
 	 * @return true on success
-	 * @throws InvalidId on non existant Thread
+	 * @throws InvalidId on non existent Thread
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to delete own or other threads
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1716,7 +1716,7 @@ public final class VBulletinAPI extends Thread{
 	/**Attempts to delete a Thread in the forum
 	 * @param threadid
 	 * @return true on success
-	 * @throws InvalidId on non existant Thread
+	 * @throws InvalidId on non existent Thread
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to delete own or other threads
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1726,9 +1726,9 @@ public final class VBulletinAPI extends Thread{
 	}
 	/**Attempts to delete a Thread in the forum
 	 * @param threadid
-	 * @param loop how many iretations it went through
+	 * @param loop how many iterations it went through
 	 * @return true on success
-	 * @throws InvalidId on non existant Thread
+	 * @throws InvalidId on non existent Thread
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to delete own or other threads
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1740,7 +1740,7 @@ public final class VBulletinAPI extends Thread{
 			HashMap<String, String> params = new HashMap<String, String>();
 			params.put("threadid", threadid);
 			errorMsg = parseResponse(callMethod("inlinemod_dodeletethreads", params, true));
-			if(loop < 4){//no inifinite loop by user
+			if(loop < 4){//no infinite loop by user
 				if(errorMsg != null){
 					if(errorMsg.length() > 0){
 						if(errorMsg.equals("something...need success")){//success//TODO need the success result....
@@ -1771,7 +1771,7 @@ public final class VBulletinAPI extends Thread{
 	 * @param subject
 	 * @param message
 	 * @return int[0] = threadid int[1] = postid
-	 * @throws InvalidId on non existant Forum
+	 * @throws InvalidId on non existent Forum
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to create threads in the forum
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1785,7 +1785,7 @@ public final class VBulletinAPI extends Thread{
 	 * @param message
 	 * @param signature post signature
 	 * @return int[0] = threadid int[1] = postid
-	 * @throws InvalidId on non existant Forum
+	 * @throws InvalidId on non existent Forum
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to create threads in the forum
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1799,7 +1799,7 @@ public final class VBulletinAPI extends Thread{
 	 * @param message
 	 * @param signature post signature
 	 * @return int[0] = threadid int[1] = postid
-	 * @throws InvalidId on non existant Forum
+	 * @throws InvalidId on non existent Forum
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to create threads in the forum
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1812,9 +1812,9 @@ public final class VBulletinAPI extends Thread{
 	 * @param subject
 	 * @param message
 	 * @param signature post signature
-	 * @param loop how many iretations it went through
+	 * @param loop how many iterations it went through
 	 * @return int[0] = threadid / int[1] = postid
-	 * @throws InvalidId on non existant Forum
+	 * @throws InvalidId on non existent Forum
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to create threads in the forum
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1869,7 +1869,7 @@ public final class VBulletinAPI extends Thread{
 	/**Attempts to open a Thread in the forum
 	 * @param threadid
 	 * @return true on success
-	 * @throws InvalidId on non existant Thread
+	 * @throws InvalidId on non existent Thread
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to open own or other threads
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1880,7 +1880,7 @@ public final class VBulletinAPI extends Thread{
 	/**Attempts to open a Thread in the forum
 	 * @param threadid
 	 * @return true on success
-	 * @throws InvalidId on non existant Thread
+	 * @throws InvalidId on non existent Thread
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to open own or other threads
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1890,9 +1890,9 @@ public final class VBulletinAPI extends Thread{
 	}
 	/**Attempts to open a Thread in the forum
 	 * @param threadid
-	 * @param loop how many iretations it went through
+	 * @param loop how many iterations it went through
 	 * @return true on success
-	 * @throws InvalidId on non existant Thread
+	 * @throws InvalidId on non existent Thread
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to open own or other threads
 	 * @throws VBulletinAPIException when less common errors occur
@@ -1943,8 +1943,8 @@ public final class VBulletinAPI extends Thread{
 	}
 	/**Attempts to view a thread and all the posts of which page the postid is specified is on.
 	 * @param threadid the thread to view
-	 * @param page detrimines which page to view.
-	 * @param perpage detrimines how many posts to view perpage(alters the results of the page parameter)
+	 * @param page determines which page to view.
+	 * @param perpage determines how many posts to view per page(alters the results of the page parameter)
 	 * @return
 	 * @throws InvalidId Thread does no exist or left blank
 	 * @throws NoPermissionLoggedout when logged out and guest do not have viewing rights
@@ -1956,8 +1956,8 @@ public final class VBulletinAPI extends Thread{
 	}
 	/**Attempts to view a thread and all the posts of which page the postid is specified is on.
 	 * @param threadid the thread to view
-	 * @param page detrimines which page to view.
-	 * @param perpage detrimines how many posts to view perpage(alters the results of the page parameter)
+	 * @param page determines which page to view.
+	 * @param perpage determines how many posts to view per page(alters the results of the page parameter)
 	 * @return
 	 * @throws InvalidId Thread does no exist or left blank
 	 * @throws NoPermissionLoggedout when logged out and guest do not have viewing rights
@@ -1969,10 +1969,10 @@ public final class VBulletinAPI extends Thread{
 	}
 	/**Attempts to view a thread and all the posts of which page the postid is specified is on.
 	 * @param threadid the thread to view
-	 * @param page detrimines which page to view.
-	 * @param perpage detrimines how many posts to view perpage(alters the results of the page parameter)
-	 * @param postid detrimines which page to view based on postid, should not be used witht he page parameter
-	 * @param loop how many iretations it went through
+	 * @param page determines which page to view.
+	 * @param perpage determines how many posts to view per page(alters the results of the page parameter)
+	 * @param postid determines which page to view based on postid, should not be used with he page parameter
+	 * @param loop how many iterations it went through
 	 * @return
 	 * @throws InvalidId Thread does no exist or left blank
 	 * @throws NoPermissionLoggedout when logged out and guest do not have viewing rights
@@ -1988,7 +1988,7 @@ public final class VBulletinAPI extends Thread{
 			if(postid != null){params.put("p", postid);}
 			if(page != null){params.put("page", page);}
 			if(perpage != null){params.put("perpage", perpage);}
-			if(loop < 4){//no inifinite loop by user
+			if(loop < 4){//no infinite loop by user
 				try {
 					thread = parseThread(callMethod("showthread", params, true));
 				} catch (InvalidAccessToken e) {
