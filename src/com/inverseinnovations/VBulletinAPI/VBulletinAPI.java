@@ -166,21 +166,83 @@ public final class VBulletinAPI extends Thread{
 		}
 		return result.toString();
 	}
-	/**Converts raw doubles and raw Strings to Int
+	/**Converts raw objects(String/Integer/Boolean/Double) to Int
 	 * @param obj
 	 * @return 0 if not a number
 	 */
-	private static int convertToInt(Object obj){
-		if(obj.getClass().getName().equals("java.lang.Double")){
-			return new Double((double) obj).intValue();
-		}
-		if(obj instanceof String){
-			if(isInteger((String) obj)){
-				return Integer.parseInt((String) obj);
+	public static int convertToInt(Object object){
+		int retur = 0;
+		if(object instanceof String){
+			if(isInteger((String) object)){
+				retur = Integer.parseInt((String) object);
 			}
 		}
-		return 0;
+		else if(object.getClass().getName().equals("java.lang.Double")){
+			retur = new Double((double) object).intValue();
+		}
+		else if(object instanceof Integer){
+			retur = ((Integer) object).intValue();
+		}
+		else if(object.getClass().equals(Boolean.class)){
+			if((Boolean)object){
+				retur = 1;
+			}
+		}
+		return retur;
 	}
+	/**Converts raw objects(String/Integer/Boolean/Double) to String
+	 * @param obj
+	 * @return blank otherwise
+	 */
+	public static String convertToString(Object object){
+		String retur = "";
+		if(object instanceof String){
+			retur = (String) object;
+		}
+		else if(object.getClass().getName().equals("java.lang.Double")){
+			retur = new Double((double) object).toString();
+		}
+		else if(object instanceof Integer){
+			retur = ((Integer) object).toString();
+		}
+		else if(object.getClass().equals(Boolean.class)){
+			if((Boolean)object){
+				retur = "true";
+			}
+			else{
+				retur = "false";
+			}
+		}
+		return retur;
+	}
+	/**Converts raw objects(String/Integer/Boolean/Double) to boolean
+	 * @param obj
+	 * @return blank otherwise
+	 */
+	public static boolean convertToBoolean(Object object){
+		boolean retur = false;
+		if(object instanceof String){
+			object = ((String) object).toLowerCase();
+			if(((String)object).equals("true") || ((String)object).equals("1")){
+				retur = true;
+			}
+		}
+		else if(object.getClass().getName().equals("java.lang.Double")){
+			if(((double)object)>=1){
+				retur = true;
+			}
+		}
+		else if(object instanceof Integer){
+			if(((Integer) object)>=1){
+				retur = true;
+			}
+		}
+		else if(object.getClass().equals(Boolean.class)){
+			retur = (Boolean)object;
+		}
+		return retur;
+	}
+
 	private boolean CONNECTED = false;
 	private boolean LOGGEDIN = false;
 	private String clientname;
@@ -245,7 +307,7 @@ public final class VBulletinAPI extends Thread{
 	 * Instantiates a new vBulletin API wrapper. This will initialize the API
 	 * connection as well, with OS name and version pulled from property files
 	 * and unique ID generated from the hash code of the system properties.
-	 * Will attempt to login with provided credentals.
+	 * Will attempt to login with provided credentials.
 	 * Use isConnected() and isLoggedin() to verify results.
 	 *
 	 * @param username
@@ -371,28 +433,48 @@ public final class VBulletinAPI extends Thread{
 	 * @throws APIIllegalStateException
 	 */
 	private void errorsCommon(String errorMsg) throws InvalidAPISignature, NoPermissionLoggedout, NoPermissionLoggedin, InvalidAccessToken, APISocketTimeoutException, APIIOException, APIIllegalStateException{
-		if(errorMsg.equals("invalid_api_signature")){
-			throw new InvalidAPISignature();
+		if(errorMsg != null){
+			if(errorMsg.equals("invalid_api_signature")){
+				throw new InvalidAPISignature();
+			}
+			else if(errorMsg.equals("nopermission_loggedout")){
+				throw new NoPermissionLoggedout();
+			}
+			else if(errorMsg.equals("nopermission_loggedin")){
+				throw new NoPermissionLoggedin();
+			}
+			else if(errorMsg.equals("invalid_accesstoken")){
+				throw new InvalidAccessToken();
+			}
+			else if(errorMsg.equals("SocketTimeoutException")){
+				throw new APISocketTimeoutException();
+			}
+			else if(errorMsg.equals("IOException")){
+				throw new APIIOException();
+			}
+			else if(errorMsg.equals("IllegalStateException")){
+				if(DEBUG){System.out.println("ERROR IllegalStateException");}
+				throw new APIIllegalStateException();
+			}
 		}
-		else if(errorMsg.equals("nopermission_loggedout")){
-			throw new NoPermissionLoggedout();
+	}
+	/**Returns forum homepage related information
+	 * @return
+	 * @throws VBulletinAPIException when less common errors occur
+	 */
+	public String forum_Home(int loop) throws VBulletinAPIException{
+		if(IsConnected()){
+			String errorMsg = "";
+			loop++;
+			HashMap<String, String> params = new HashMap<String, String>();
+			params.put("forumid", "88");
+			
+			errorMsg = parseResponse(callMethod("forumdisplay", params, true));
+
+			errorsCommon(errorMsg);
+			return errorMsg;
 		}
-		else if(errorMsg.equals("nopermission_loggedin")){
-			throw new NoPermissionLoggedin();
-		}
-		else if(errorMsg.equals("invalid_accesstoken")){
-			throw new InvalidAccessToken();
-		}
-		else if(errorMsg.equals("SocketTimeoutException")){
-			throw new APISocketTimeoutException();
-		}
-		else if(errorMsg.equals("IOException")){
-			throw new APIIOException();
-		}
-		else if(errorMsg.equals("IllegalStateException")){
-			if(DEBUG){System.out.println("ERROR IllegalStateException");}
-			throw new APIIllegalStateException();
-		}
+		throw new NoConnectionException();
 	}
 	/**
 	 * Attempts to login no more than 3 times
@@ -486,7 +568,7 @@ public final class VBulletinAPI extends Thread{
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
 			params.put("username", user);
-			if(loop < 4){//no inifinite loop by user
+			if(loop < 4){//no infinite loop by user
 				try {
 					member = parseViewMember(callMethod("member", params, true));
 				} catch (InvalidAccessToken | NoPermissionLoggedout e) {
@@ -2056,6 +2138,6 @@ public final class VBulletinAPI extends Thread{
 			}
 		}
 		return null;
-	}
-
+	}	
+	
 }
