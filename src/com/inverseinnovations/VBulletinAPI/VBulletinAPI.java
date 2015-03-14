@@ -249,15 +249,15 @@ public final class VBulletinAPI extends Thread{
 	 */
 	public String forum_Home(int loop) throws VBulletinAPIException{
 		if(isConnected()){
-			String errorMsg = "";
+			//String errorMsg = "";
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
 			params.put("forumid", "88");
 			
-			errorMsg = parseResponse(callMethod("forumdisplay", params, true));
+			parseForumDisplay(callMethod("forumdisplay", params, true));
 
-			errorsCommon(errorMsg);
-			return errorMsg;
+			//errorsCommon(errorMsg);
+			return "done";
 		}
 		throw new NoConnectionException();
 	}
@@ -443,9 +443,6 @@ public final class VBulletinAPI extends Thread{
 			apiClientID = String.valueOf(initvalues.get("apiclientid"));
 			//if((String) initvalues.get("secret") != null){secret = (String) initvalues.get("secret");}
 			setSecret((String) initvalues.get("secret"));
-			//Base.Console.debug("apiAccessToken = "+apiAccessToken);
-			//Base.Console.debug("apiClientID = "+apiClientID);
-			//Base.Console.debug("secret = "+secret);
 			return initvalues;
 		}
 		catch(Exception e){
@@ -474,6 +471,214 @@ public final class VBulletinAPI extends Thread{
 	 */
 	public boolean isLoggedin(){
 		return LOGGEDIN;
+	}
+	/**Returns a Forum containing all the Forums within
+	 * @param response
+	 * @return
+	 * @throws InvalidId ThreadID missing or nonexistent
+	 * @throws NoPermissionLoggedout
+	 * @throws NoPermissionLoggedin
+	 * @throws VBulletinAPIException All generic or unknown errors
+	 */
+	@SuppressWarnings("rawtypes")
+	private Forum parseForumDisplay(LinkedTreeMap<String, Object> response) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		Forum forum = new Forum();
+		if(response != null){
+			if(response.containsKey("response")){
+				LinkedTreeMap response2 = (LinkedTreeMap)response.get("response");
+				if(response2.containsKey("daysprune")){
+					forum.daysprune = Functions.convertToInt(response2.get("daysprune"));
+				}
+				if(response2.containsKey("limitlower")){
+					forum.limitlower = Functions.convertToInt(response2.get("limitlower"));
+				}
+				if(response2.containsKey("limitupper")){
+					forum.limitupper = Functions.convertToInt(response2.get("limitupper"));
+				}
+				if(response2.containsKey("numberguest")){
+					forum.numberguest = Functions.convertToInt(response2.get("numberguest"));
+				}
+				if(response2.containsKey("numberguest")){
+					forum.numberguest = Functions.convertToInt(response2.get("numberguest"));
+				}
+				if(response2.containsKey("numberregistered")){
+					forum.numberregistered = Functions.convertToInt(response2.get("numberregistered"));
+				}
+				if(response2.containsKey("pagenumber")){
+					forum.pagenumber = Functions.convertToInt(response2.get("pagenumber"));
+				}
+				if(response2.containsKey("perpage")){
+					forum.perpage = Functions.convertToInt(response2.get("perpage"));
+				}
+				if(response2.containsKey("totalmods")){
+					forum.totalmods = Functions.convertToInt(response2.get("totalmods"));
+				}
+				if(response2.containsKey("totalonline")){
+					forum.totalonline = Functions.convertToInt(response2.get("totalonline"));
+				}
+				if(response2.containsKey("totalthreads")){
+					forum.totalthreads = Functions.convertToInt(response2.get("totalthreads"));
+				}
+				//foruminfo {}
+				if(response2.containsKey("foruminfo")){
+					LinkedTreeMap foruminfo = (LinkedTreeMap)response2.get("foruminfo");
+					if(foruminfo.containsKey("forumid")){
+						forum.forumid = Functions.convertToInt(foruminfo.get("forumid"));
+					}
+					if(foruminfo.containsKey("title")){
+						forum.title = Functions.convertToString(foruminfo.get("title"));
+					}
+					if(foruminfo.containsKey("title_clean")){
+						forum.title_clean = Functions.convertToString(foruminfo.get("title_clean"));
+					}
+					if(foruminfo.containsKey("description")){
+						forum.description = Functions.convertToString(foruminfo.get("description"));
+					}
+					if(foruminfo.containsKey("description_clean")){
+						forum.description_clean = Functions.convertToString(foruminfo.get("description_clean"));
+					}
+					if(foruminfo.containsKey("prefixrequired")){
+						forum.prefixrequired = Functions.convertToInt(foruminfo.get("prefixrequired"));
+					}
+				}
+				//forumbits []
+				if(response2.containsKey("forumbits")){
+					System.out.println("forumbits is "+response2.get("forumbits").getClass().getName());
+					if(response2.get("forumbits") instanceof ArrayList){//multiple posts
+						@SuppressWarnings("unchecked")
+						ArrayList<LinkedTreeMap<String, Object>> forumbits = (ArrayList<LinkedTreeMap<String, Object>>) response2.get("forumbits");
+						for(LinkedTreeMap<String, Object> forumHolder : forumbits){
+							forum.subforums.add(parseForumSub(forumHolder));
+						}
+					}
+					else if(response2.get("forumbits") instanceof LinkedTreeMap){//multiple posts
+						@SuppressWarnings("unchecked")
+						LinkedTreeMap<String, Object> forumbit = (LinkedTreeMap<String, Object>) response2.get("forumbits");
+						forum.subforums.add(parseForumSub(forumbit));
+					}
+					/*else if(((LinkedTreeMap)response.get("response")).get("postbits") instanceof LinkedTreeMap){//single post*/
+				}
+				if(((LinkedTreeMap)response.get("response")).containsKey("errormessage")){
+					String theError = "";
+					String errorSecond = "";
+					String className = response2.get("errormessage").getClass().getName();
+					if(className.equals("java.lang.String")){
+						theError = (String) response2.get("errormessage");
+						if(theError.equals("redirect_postthanks")){//this is for newthread and newpost
+							if(response.containsKey("show")){
+								if(((LinkedTreeMap)response.get("show")).containsKey("forumid")){
+									theError = ""+Functions.convertToInt(((LinkedTreeMap)response.get("show")).get("forumid"));
+									//theError += " "+Functions.convertToInt(((LinkedTreeMap)response.get("show")).get("postid"));
+								}
+							}
+						}
+					}
+					else if(className.equals("java.util.ArrayList")){
+						Object[] errors = ((ArrayList) ((LinkedTreeMap)response.get("response")).get("errormessage")).toArray();
+						if(errors.length > 0){
+							theError = errors[0].toString();
+						}
+						if(errors.length > 1){
+							errorSecond = errors[1].toString();
+						}
+					}
+					//parse theError here
+					if(theError.equals("noid")){
+						System.out.println("Thread Parse InvalidId "+errorSecond);
+						throw new InvalidId(errorSecond);
+					}
+					errorsCommon(theError);
+					System.out.println("responseError  response -> errormessage type unknown: "+className);
+					throw new VBulletinAPIException("vBulletin API Unknown Error - "+className);
+				}
+			}
+		}
+		if(DEBUG){
+			//System.out.println("thread all ->");
+			//System.out.println(response.toString());
+		}
+		return forum;
+	}
+	/**Returns a Forum containing all the Forums within
+	 * @param response
+	 * @return
+	 * @throws InvalidId ThreadID missing or nonexistent
+	 * @throws NoPermissionLoggedout
+	 * @throws NoPermissionLoggedin
+	 * @throws VBulletinAPIException All generic or unknown errors
+	 */
+	@SuppressWarnings("rawtypes")
+	private Forum parseForumSub(LinkedTreeMap<String, Object> forumbit) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		Forum forum = new Forum();
+		if(forumbit != null){
+			if(forumbit.containsKey("parent_is_category")){
+				forum.parent_is_category = Functions.convertToBoolean(forumbit.get("parent_is_category"));
+			}
+			if(forumbit.containsKey("forum")){
+				LinkedTreeMap forumdata = (LinkedTreeMap)forumbit.get("forum");
+				if(forumdata.containsKey("forumid")){
+					forum.forumid = Functions.convertToInt(forumdata.get("forumid"));
+				}
+				if(forumdata.containsKey("threadcount")){
+					forum.threadcount = Functions.convertToInt(forumdata.get("threadcount"));
+				}
+				if(forumdata.containsKey("replycount")){
+					forum.replycount = Functions.convertToInt(forumdata.get("replycount"));
+				}
+				if(forumdata.containsKey("title")){
+					forum.title = Functions.convertToString(forumdata.get("title"));
+				}
+				if(forumdata.containsKey("title_clean")){
+					forum.title_clean = Functions.convertToString(forumdata.get("title_clean"));
+				}
+				if(forumdata.containsKey("description")){
+					forum.description = Functions.convertToString(forumdata.get("description"));
+				}
+				if(forumdata.containsKey("description_clean")){
+					forum.description_clean = Functions.convertToString(forumdata.get("description_clean"));
+				}
+				if(forumdata.containsKey("statusicon")){
+					forum.statusicon = Functions.convertToString(forumdata.get("statusicon"));
+				}
+				if(forumdata.containsKey("browsers")){
+					forum.browsers = Functions.convertToInt(forumdata.get("browsers"));
+				}
+				
+				//if(forumdata.containsKey("subforums")){
+				//	forum.subforums = Functions.convertToString(forumdata.get("subforums"));
+				//}
+				//show{}
+				if(forumbit.containsKey("childforumbits")){//yes...within the forumdata if statement
+					if(forumbit.get("childforumbits") instanceof ArrayList){
+						@SuppressWarnings("unchecked")
+						ArrayList<LinkedTreeMap<String, Object>> childforumbits = (ArrayList<LinkedTreeMap<String, Object>>) forumbit.get("childforumbits");
+						for(LinkedTreeMap<String, Object> childforumHolder : childforumbits){
+							forum.subforums.add(parseForumSub(childforumHolder));
+						}
+					}
+					else if(forumbit.get("childforumbits") instanceof LinkedTreeMap){
+						@SuppressWarnings("unchecked")
+						LinkedTreeMap<String, Object> childforumbit = (LinkedTreeMap<String, Object>) forumbit.get("childforumbits");
+						forum.subforums.add(parseForumSub(childforumbit));
+					}
+				}
+				if(forumdata.containsKey("subforums")){
+					if(forumdata.get("subforums") instanceof ArrayList){
+						@SuppressWarnings("unchecked")
+						ArrayList<LinkedTreeMap<String, Object>> subforums = (ArrayList<LinkedTreeMap<String, Object>>) forumdata.get("subforums");
+						for(LinkedTreeMap<String, Object> subforumHolder : subforums){
+							forum.subforums.add(parseForumSub(subforumHolder));
+						}
+					}
+					else if(forumdata.get("subforums") instanceof LinkedTreeMap){
+						@SuppressWarnings("unchecked")
+						LinkedTreeMap<String, Object> subforum = (LinkedTreeMap<String, Object>) forumdata.get("subforums");
+						forum.subforums.add(parseForumSub(subforum));
+					}
+				}
+			}
+		}
+		return forum;
 	}
 	/**Parses response, designed specifically for gathering the list of all messages. Messages only have the header at this point, the actual message is not included
 	 * @param response
