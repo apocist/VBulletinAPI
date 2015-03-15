@@ -3,8 +3,8 @@ package com.inverseinnovations.VBulletinAPI;
 import com.inverseinnovations.VBulletinAPI.Functions;
 
 public class Message{
-	public String pmid;
-	public String sendtime;
+	public int pmid;
+	public String sendtime;//TODO is this a String?(check)
 	public String statusicon;
 	public String title;
 	public int userid;

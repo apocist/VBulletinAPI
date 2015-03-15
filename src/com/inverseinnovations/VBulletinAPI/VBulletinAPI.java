@@ -217,7 +217,7 @@ public final class VBulletinAPI extends Thread{
 	 * @throws APIIOException
 	 * @throws APIIllegalStateException
 	 */
-	private void errorsCommon(String errorMsg) throws InvalidAPISignature, NoPermissionLoggedout, NoPermissionLoggedin, InvalidAccessToken, APISocketTimeoutException, APIIOException, APIIllegalStateException{
+	protected static void errorsCommon(String errorMsg) throws InvalidAPISignature, NoPermissionLoggedout, NoPermissionLoggedin, InvalidAccessToken, APISocketTimeoutException, APIIOException, APIIllegalStateException{
 		if(errorMsg != null){
 			if(errorMsg.equals("invalid_api_signature")){
 				throw new InvalidAPISignature();
@@ -254,7 +254,7 @@ public final class VBulletinAPI extends Thread{
 			HashMap<String, String> params = new HashMap<String, String>();
 			params.put("forumid", "293");
 			
-			parseForumDisplay(callMethod("forumdisplay", params, true));
+			new Forum().parse(callMethod("forumdisplay", params, true));
 
 			//errorsCommon(errorMsg);
 			return "done";
@@ -355,7 +355,7 @@ public final class VBulletinAPI extends Thread{
 			params.put("username", user);
 			if(loop < 4){//no infinite loop by user
 				try {
-					member = parseViewMember(callMethod("member", params, true));
+					member = new Member().parse(callMethod("member", params, true));
 				} catch (InvalidAccessToken | NoPermissionLoggedout e) {
 					forum_Login();
 					if(isLoggedin()){
@@ -472,256 +472,51 @@ public final class VBulletinAPI extends Thread{
 	public boolean isLoggedin(){
 		return LOGGEDIN;
 	}
-	/**Returns a Forum containing all the Forums within
-	 * @param response
-	 * @return
-	 * @throws InvalidId ThreadID missing or nonexistent
-	 * @throws NoPermissionLoggedout
-	 * @throws NoPermissionLoggedin
-	 * @throws VBulletinAPIException All generic or unknown errors
-	 */
-	@SuppressWarnings("rawtypes")
-	private Forum parseForumDisplay(LinkedTreeMap<String, Object> response) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		System.out.println(response);
-		Forum forum = new Forum();
-		if(response != null){
-			if(response.containsKey("response")){
-				@SuppressWarnings("unchecked")
-				LinkedTreeMap<String, Object> response2 = (LinkedTreeMap<String, Object>)response.get("response");
-				if(response2.containsKey("daysprune")){
-					forum.daysprune = Functions.convertToInt(response2.get("daysprune"));
-				}
-				if(response2.containsKey("limitlower")){
-					forum.limitlower = Functions.convertToInt(response2.get("limitlower"));
-				}
-				if(response2.containsKey("limitupper")){
-					forum.limitupper = Functions.convertToInt(response2.get("limitupper"));
-				}
-				if(response2.containsKey("numberguest")){
-					forum.numberguest = Functions.convertToInt(response2.get("numberguest"));
-				}
-				if(response2.containsKey("numberguest")){
-					forum.numberguest = Functions.convertToInt(response2.get("numberguest"));
-				}
-				if(response2.containsKey("numberregistered")){
-					forum.numberregistered = Functions.convertToInt(response2.get("numberregistered"));
-				}
-				if(response2.containsKey("pagenumber")){
-					forum.pagenumber = Functions.convertToInt(response2.get("pagenumber"));
-				}
-				if(response2.containsKey("perpage")){
-					forum.perpage = Functions.convertToInt(response2.get("perpage"));
-				}
-				if(response2.containsKey("totalmods")){
-					forum.totalmods = Functions.convertToInt(response2.get("totalmods"));
-				}
-				if(response2.containsKey("totalonline")){
-					forum.totalonline = Functions.convertToInt(response2.get("totalonline"));
-				}
-				if(response2.containsKey("totalthreads")){
-					forum.totalthreads = Functions.convertToInt(response2.get("totalthreads"));
-				}
-				//foruminfo {}
-				if(response2.containsKey("foruminfo")){
-					LinkedTreeMap foruminfo = (LinkedTreeMap)response2.get("foruminfo");
-					if(foruminfo.containsKey("forumid")){
-						forum.forumid = Functions.convertToInt(foruminfo.get("forumid"));
-					}
-					if(foruminfo.containsKey("title")){
-						forum.title = Functions.convertToString(foruminfo.get("title"));
-					}
-					if(foruminfo.containsKey("title_clean")){
-						forum.title_clean = Functions.convertToString(foruminfo.get("title_clean"));
-					}
-					if(foruminfo.containsKey("description")){
-						forum.description = Functions.convertToString(foruminfo.get("description"));
-					}
-					if(foruminfo.containsKey("description_clean")){
-						forum.description_clean = Functions.convertToString(foruminfo.get("description_clean"));
-					}
-					if(foruminfo.containsKey("prefixrequired")){
-						forum.prefixrequired = Functions.convertToInt(foruminfo.get("prefixrequired"));
-					}
-				}
-				//forumbits []
-				if(response2.containsKey("forumbits")){
-					System.out.println("forumbits is "+response2.get("forumbits").getClass().getName());
-					if(response2.get("forumbits") instanceof ArrayList){//multiple posts
-						@SuppressWarnings("unchecked")
-						ArrayList<LinkedTreeMap<String, Object>> forumbits = (ArrayList<LinkedTreeMap<String, Object>>) response2.get("forumbits");
-						for(LinkedTreeMap<String, Object> forumHolder : forumbits){
-							forum.subforums.add(parseForumSub(forumHolder));
-						}
-					}
-					else if(response2.get("forumbits") instanceof LinkedTreeMap){//multiple posts
-						@SuppressWarnings("unchecked")
-						LinkedTreeMap<String, Object> forumbit = (LinkedTreeMap<String, Object>) response2.get("forumbits");
-						forum.subforums.add(parseForumSub(forumbit));
-					}
-					/*else if(((LinkedTreeMap)response.get("response")).get("postbits") instanceof LinkedTreeMap){//single post*/
-				}
-				if(((LinkedTreeMap)response.get("response")).containsKey("errormessage")){
-					String theError = "";
-					String errorSecond = "";
-					String className = response2.get("errormessage").getClass().getName();
-					if(className.equals("java.lang.String")){
-						theError = (String) response2.get("errormessage");
-						if(theError.equals("redirect_postthanks")){//this is for newthread and newpost
-							if(response.containsKey("show")){
-								if(((LinkedTreeMap)response.get("show")).containsKey("forumid")){
-									theError = ""+Functions.convertToInt(((LinkedTreeMap)response.get("show")).get("forumid"));
-									//theError += " "+Functions.convertToInt(((LinkedTreeMap)response.get("show")).get("postid"));
-								}
-							}
-						}
-					}
-					else if(className.equals("java.util.ArrayList")){
-						Object[] errors = ((ArrayList) ((LinkedTreeMap)response.get("response")).get("errormessage")).toArray();
-						if(errors.length > 0){
-							theError = errors[0].toString();
-						}
-						if(errors.length > 1){
-							errorSecond = errors[1].toString();
-						}
-					}
-					//parse theError here
-					if(theError.equals("noid")){
-						System.out.println("Thread Parse InvalidId "+errorSecond);
-						throw new InvalidId(errorSecond);
-					}
-					errorsCommon(theError);
-					System.out.println("responseError  response -> errormessage type unknown: "+className);
-					throw new VBulletinAPIException("vBulletin API Unknown Error - "+className);
-				}
-			}
-		}
-		if(DEBUG){
-			//System.out.println("thread all ->");
-			//System.out.println(response.toString());
-		}
-		return forum;
-	}
-	/**Returns a Forum containing all the Forums within
-	 * @param response
-	 * @return
-	 * @throws InvalidId ThreadID missing or nonexistent
-	 * @throws NoPermissionLoggedout
-	 * @throws NoPermissionLoggedin
-	 * @throws VBulletinAPIException All generic or unknown errors
-	 */
-	@SuppressWarnings("rawtypes")
-	private Forum parseForumSub(LinkedTreeMap<String, Object> forumbit) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		Forum forum = new Forum();
-		if(forumbit != null){
-			if(forumbit.containsKey("parent_is_category")){
-				forum.parent_is_category = Functions.convertToBoolean(forumbit.get("parent_is_category"));
-			}
-			if(forumbit.containsKey("forum")){
-				LinkedTreeMap forumdata = (LinkedTreeMap)forumbit.get("forum");
-				if(forumdata.containsKey("forumid")){
-					forum.forumid = Functions.convertToInt(forumdata.get("forumid"));
-				}
-				if(forumdata.containsKey("threadcount")){
-					forum.threadcount = Functions.convertToInt(forumdata.get("threadcount"));
-				}
-				if(forumdata.containsKey("replycount")){
-					forum.replycount = Functions.convertToInt(forumdata.get("replycount"));
-				}
-				if(forumdata.containsKey("title")){
-					forum.title = Functions.convertToString(forumdata.get("title"));
-				}
-				if(forumdata.containsKey("title_clean")){
-					forum.title_clean = Functions.convertToString(forumdata.get("title_clean"));
-				}
-				if(forumdata.containsKey("description")){
-					forum.description = Functions.convertToString(forumdata.get("description"));
-				}
-				if(forumdata.containsKey("description_clean")){
-					forum.description_clean = Functions.convertToString(forumdata.get("description_clean"));
-				}
-				if(forumdata.containsKey("statusicon")){
-					forum.statusicon = Functions.convertToString(forumdata.get("statusicon"));
-				}
-				if(forumdata.containsKey("browsers")){
-					forum.browsers = Functions.convertToInt(forumdata.get("browsers"));
-				}
-				
-				//if(forumdata.containsKey("subforums")){
-				//	forum.subforums = Functions.convertToString(forumdata.get("subforums"));
-				//}
-				//show{}
-				if(forumbit.containsKey("childforumbits")){//yes...within the forumdata if statement
-					if(forumbit.get("childforumbits") instanceof ArrayList){
-						@SuppressWarnings("unchecked")
-						ArrayList<LinkedTreeMap<String, Object>> childforumbits = (ArrayList<LinkedTreeMap<String, Object>>) forumbit.get("childforumbits");
-						for(LinkedTreeMap<String, Object> childforumHolder : childforumbits){
-							forum.subforums.add(parseForumSub(childforumHolder));
-						}
-					}
-					else if(forumbit.get("childforumbits") instanceof LinkedTreeMap){
-						@SuppressWarnings("unchecked")
-						LinkedTreeMap<String, Object> childforumbit = (LinkedTreeMap<String, Object>) forumbit.get("childforumbits");
-						forum.subforums.add(parseForumSub(childforumbit));
-					}
-				}
-				if(forumdata.containsKey("subforums")){
-					if(forumdata.get("subforums") instanceof ArrayList){
-						@SuppressWarnings("unchecked")
-						ArrayList<LinkedTreeMap<String, Object>> subforums = (ArrayList<LinkedTreeMap<String, Object>>) forumdata.get("subforums");
-						for(LinkedTreeMap<String, Object> subforumHolder : subforums){
-							forum.subforums.add(parseForumSub(subforumHolder));
-						}
-					}
-					else if(forumdata.get("subforums") instanceof LinkedTreeMap){
-						@SuppressWarnings("unchecked")
-						LinkedTreeMap<String, Object> subforum = (LinkedTreeMap<String, Object>) forumdata.get("subforums");
-						forum.subforums.add(parseForumSub(subforum));
-					}
-				}
-			}
-		}
-		return forum;
-	}
+
+	
 	/**Parses response, designed specifically for gathering the list of all messages. Messages only have the header at this point, the actual message is not included
-	 * @param response
+	 * @param response from callMethod
 	 * @return ArrayList<Message>
 	 */
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private ArrayList<Message> parseMessages(LinkedTreeMap<String, Object> response) throws NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		ArrayList<Message> messages = new ArrayList<Message>();
 		if(response != null){
 			if(response.containsKey("response")){
-				if(((LinkedTreeMap)response.get("response")).containsKey("HTML")){
-					LinkedTreeMap HTML = (LinkedTreeMap) ((LinkedTreeMap)response.get("response")).get("HTML");
+				//Need more object Data Type checks
+				LinkedTreeMap<String, Object> response2 = (LinkedTreeMap<String, Object>)response.get("response");
+				if(response2.containsKey("HTML")){
+					LinkedTreeMap<String, Object> HTML = (LinkedTreeMap<String, Object>) response2.get("HTML");
 					if(HTML.containsKey("messagelist_periodgroups")){
 						if(HTML.get("messagelist_periodgroups") instanceof LinkedTreeMap){
-							LinkedTreeMap messageGroup = (LinkedTreeMap) HTML.get("messagelist_periodgroups");
+							LinkedTreeMap<String, Object> messageGroup = (LinkedTreeMap<String, Object>) HTML.get("messagelist_periodgroups");
 							if(messageGroup.containsKey("messagesingroup")){
 								if((double)(messageGroup.get("messagesingroup"))>0){//if there are messages
 									if(messageGroup.containsKey("messagelistbits")){
 										if(messageGroup.get("messagelistbits") instanceof LinkedTreeMap){//single message
 											Message parsedMessage = new Message();
-											LinkedTreeMap message = (LinkedTreeMap) messageGroup.get("messagelistbits");
-											parsedMessage.pmid = (String) ((LinkedTreeMap)message.get("pm")).get("pmid");
-											parsedMessage.sendtime = (String) ((LinkedTreeMap)message.get("pm")).get("sendtime");
-											parsedMessage.statusicon = (String) ((LinkedTreeMap)message.get("pm")).get("statusicon");
-											parsedMessage.title = (String) ((LinkedTreeMap)message.get("pm")).get("title");
+											LinkedTreeMap<String, Object> message = (LinkedTreeMap<String, Object>) messageGroup.get("messagelistbits");
+											LinkedTreeMap<String, Object> pm = (LinkedTreeMap<String, Object>) message.get("messagelistbits");
+											parsedMessage.pmid = Functions.convertToInt(pm.get("pmid"));
+											parsedMessage.sendtime = Functions.convertToString(pm.get("sendtime"));
+											parsedMessage.statusicon = Functions.convertToString(pm.get("statusicon"));
+											parsedMessage.title = Functions.convertToString(pm.get("title"));
 
-											parsedMessage.setUserid((String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("userid"));
-											parsedMessage.username = (String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("username");
+											parsedMessage.userid = Functions.convertToInt( ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("userid"));
+											parsedMessage.username = Functions.convertToString(  ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("username"));
 											messages.add(parsedMessage);
 										}
 										else if(messageGroup.get("messagelistbits") instanceof ArrayList){//multiple messages
-											for(Object objInner : (ArrayList) messageGroup.get("messagelistbits")){
+											for(LinkedTreeMap<String, Object> message : (ArrayList<LinkedTreeMap<String, Object>>) messageGroup.get("messagelistbits")){
 												Message parsedMessage = new Message();
-												LinkedTreeMap message = (LinkedTreeMap) objInner;
-												parsedMessage.pmid = (String) ((LinkedTreeMap)message.get("pm")).get("pmid");
-												parsedMessage.sendtime = (String) ((LinkedTreeMap)message.get("pm")).get("sendtime");
-												parsedMessage.statusicon = (String) ((LinkedTreeMap)message.get("pm")).get("statusicon");
-												parsedMessage.title = (String) ((LinkedTreeMap)message.get("pm")).get("title");
+												LinkedTreeMap<String, Object> pm = (LinkedTreeMap<String, Object>) message.get("messagelistbits");
+												parsedMessage.pmid = Functions.convertToInt(pm.get("pmid"));
+												parsedMessage.sendtime = Functions.convertToString(pm.get("sendtime"));
+												parsedMessage.statusicon = Functions.convertToString(pm.get("statusicon"));
+												parsedMessage.title = Functions.convertToString(pm.get("title"));
 
-												parsedMessage.setUserid((String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("userid"));
-												parsedMessage.username = (String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("username");
+												parsedMessage.userid = Functions.convertToInt( ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("userid"));
+												parsedMessage.username = Functions.convertToString(  ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("username"));
 												messages.add(parsedMessage);
 											}
 										}
@@ -738,27 +533,28 @@ public final class VBulletinAPI extends Thread{
 										if(messageGroup.containsKey("messagelistbits")){
 											if(messageGroup.get("messagelistbits") instanceof LinkedTreeMap){//single message
 												Message parsedMessage = new Message();
-												LinkedTreeMap message = (LinkedTreeMap) messageGroup.get("messagelistbits");
-												parsedMessage.pmid = (String) ((LinkedTreeMap)message.get("pm")).get("pmid");
-												parsedMessage.sendtime = (String) ((LinkedTreeMap)message.get("pm")).get("sendtime");
-												parsedMessage.statusicon = (String) ((LinkedTreeMap)message.get("pm")).get("statusicon");
-												parsedMessage.title = (String) ((LinkedTreeMap)message.get("pm")).get("title");
+												LinkedTreeMap<String, Object> message = (LinkedTreeMap<String, Object>) messageGroup.get("messagelistbits");
+												LinkedTreeMap<String, Object> pm = (LinkedTreeMap<String, Object>) message.get("messagelistbits");
+												parsedMessage.pmid = Functions.convertToInt(pm.get("pmid"));
+												parsedMessage.sendtime = Functions.convertToString(pm.get("sendtime"));
+												parsedMessage.statusicon = Functions.convertToString(pm.get("statusicon"));
+												parsedMessage.title = Functions.convertToString(pm.get("title"));
 
-												parsedMessage.setUserid((String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("userid"));
-												parsedMessage.username = (String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("username");
+												parsedMessage.userid = Functions.convertToInt( ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("userid"));
+												parsedMessage.username = Functions.convertToString(  ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("username"));
 												messages.add(parsedMessage);
 											}
 											else if(messageGroup.get("messagelistbits") instanceof ArrayList){//multiple messages
-												for(Object objInner : (ArrayList) messageGroup.get("messagelistbits")){
+												for(LinkedTreeMap<String, Object> message : (ArrayList<LinkedTreeMap<String, Object>>) messageGroup.get("messagelistbits")){
 													Message parsedMessage = new Message();
-													LinkedTreeMap message = (LinkedTreeMap) objInner;
-													parsedMessage.pmid = (String) ((LinkedTreeMap)message.get("pm")).get("pmid");
-													parsedMessage.sendtime = (String) ((LinkedTreeMap)message.get("pm")).get("sendtime");
-													parsedMessage.statusicon = (String) ((LinkedTreeMap)message.get("pm")).get("statusicon");
-													parsedMessage.title = (String) ((LinkedTreeMap)message.get("pm")).get("title");
+													LinkedTreeMap<String, Object> pm = (LinkedTreeMap<String, Object>) message.get("messagelistbits");
+													parsedMessage.pmid = Functions.convertToInt(pm.get("pmid"));
+													parsedMessage.sendtime = Functions.convertToString(pm.get("sendtime"));
+													parsedMessage.statusicon = Functions.convertToString(pm.get("statusicon"));
+													parsedMessage.title = Functions.convertToString(pm.get("title"));
 
-													parsedMessage.setUserid((String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("userid"));
-													parsedMessage.username = (String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("username");
+													parsedMessage.userid = Functions.convertToInt( ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("userid"));
+													parsedMessage.username = Functions.convertToString(  ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("username"));
 													messages.add(parsedMessage);
 												}
 											}
@@ -769,34 +565,31 @@ public final class VBulletinAPI extends Thread{
 						}
 					}
 				}
-				if(((LinkedTreeMap)response.get("response")).containsKey("errormessage")){
+				if(response2.containsKey("errormessage")){
 					String theError = "";
-					//String errorSecond = "";
-					String className = ((LinkedTreeMap)response.get("response")).get("errormessage").getClass().getName();
-					if(className.equals("java.lang.String")){
-						theError = ((String) ((LinkedTreeMap)response.get("response")).get("errormessage"));
+					if(response2.get("errormessage") instanceof String){
+						theError = (String)response2.get("errormessage");
 						if(theError.equals("redirect_postthanks")){//this is for newthread and newpost
-							if(response.containsKey("show")){
-								if(((LinkedTreeMap)response.get("show")).containsKey("threadid")){
-									theError = (String) ((LinkedTreeMap)response.get("show")).get("threadid");
-									theError += " "+(double) ((LinkedTreeMap)response.get("show")).get("postid");
+							if(response.get("show") instanceof LinkedTreeMap){
+								LinkedTreeMap<String, Object> show = (LinkedTreeMap<String, Object>)response.get("show");
+								if(show.containsKey("threadid")){
+									theError = ""+Functions.convertToInt(show.get("threadid"));
+								}
+								if(show.containsKey("postid")){
+									theError += " "+Functions.convertToInt(show.get("postid"));
 								}
 							}
 						}
 					}
-					else if(className.equals("java.util.ArrayList")){
-						Object[] errors = ((ArrayList) ((LinkedTreeMap)response.get("response")).get("errormessage")).toArray();
+					else if(response2.get("errormessage") instanceof ArrayList){
+						Object[] errors = ((ArrayList<String>) response2.get("errormessage")).toArray();
 						if(errors.length > 0){
 							theError = errors[0].toString();
 						}
-						/*if(errors.length > 1){
-							errorSecond = errors[1].toString();
-						}*/
 					}
-					//parse theError here
 					errorsCommon(theError);
-					System.out.println("responseError  response -> errormessage type unknown: "+className);
-					throw new VBulletinAPIException("vBulletin API Unknown Error - "+className);
+					System.out.println("responseError  response -> errormessage type unknown: "+response2.get("errormessage").getClass().getName());
+					throw new VBulletinAPIException("vBulletin API Unknown Error - "+response2.get("errormessage").getClass().getName());
 				}
 			}
 		}
@@ -906,282 +699,8 @@ public final class VBulletinAPI extends Thread{
 		//Base.Console.debug("SC2Mafia API return error: "+theReturn);
 		return theReturn;
 	}
-	/**Returns a Thread containing all the Posts within(or specified)
-	 * @param response
-	 * @return
-	 * @throws InvalidId ThreadID missing or nonexistent
-	 * @throws NoPermissionLoggedout
-	 * @throws NoPermissionLoggedin
-	 * @throws VBulletinAPIException All generic or unknown errors
-	 */
-	@SuppressWarnings("rawtypes")
-	private ForumThread parseThread(LinkedTreeMap<String, Object> response) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		ForumThread thread = new ForumThread();
-		if(response != null){
-			if(response.containsKey("response")){
-				@SuppressWarnings("unchecked")
-				LinkedTreeMap<String, Object> response2 = (LinkedTreeMap<String, Object>)response.get("response");
-				if(response2.containsKey("totalposts")){
-					thread.totalposts = Functions.convertToInt(response2.get("totalposts"));
-				}
-				if(response2.containsKey("FIRSTPOSTID")){
-					thread.FIRSTPOSTID = Functions.convertToInt(response2.get("FIRSTPOSTID"));
-				}
-				if(response2.containsKey("LASTPOSTID")){
-					thread.LASTPOSTID = Functions.convertToInt(response2.get("LASTPOSTID"));
-				}
-				if(response2.containsKey("pagenumber")){
-					thread.pagenumber = Functions.convertToInt(response2.get("pagenumber"));
-				}
-				if(response2.containsKey("perpage")){
-					thread.perpage = Functions.convertToInt(response2.get("perpage"));
-				}
-				if(response2.containsKey("postbits")){
-					if(response2.get("postbits") instanceof ArrayList){//multiple posts
-						@SuppressWarnings("unchecked")
-						ArrayList<LinkedTreeMap<String, Object>> postbits = (ArrayList<LinkedTreeMap<String, Object>>) response2.get("postbits");
-						for(LinkedTreeMap<String, Object> postHolder : postbits){
-							if(postHolder.containsKey("post")){
-								Post post = new Post();
-								@SuppressWarnings("unchecked")
-								LinkedTreeMap<String, Object> postPost = (LinkedTreeMap<String, Object>) postHolder.get("post");
-								if(postPost.containsKey("postid")){
-									post.postid = Functions.convertToInt(postPost.get("postid"));
-								}
-								if(postPost.containsKey("posttime")){
-									if(Functions.isInteger((String) postPost.get("posttime"))){
-										post.posttime = Long.parseLong((String) postPost.get("posttime"));//TODO check
-									}
-								}
-								if(postPost.containsKey("threadid")){
-									post.threadid = Functions.convertToInt(postPost.get("threadid"));
-								}
-								if(postPost.containsKey("userid")){
-									post.userid = Functions.convertToInt(postPost.get("userid"));
-								}
-								if(postPost.containsKey("username")){
-									post.username = Functions.convertToString(postPost.get("username"));
-								}
-								if(postPost.containsKey("avatarurl")){
-									post.avatarurl = Functions.convertToString(postPost.get("avatarurl"));
-								}
-								if(postPost.containsKey("usertitle")){
-									post.usertitle = Functions.convertToString(postPost.get("usertitle"));
-								}
-								if(postPost.containsKey("joindate")){
-									if(Functions.isInteger((String) postPost.get("joindate"))){
-										post.joindate = Long.parseLong((String) postPost.get("joindate"));//TODO check
-									}
-								}
-								if(postPost.containsKey("title")){
-									post.title = Functions.convertToString(postPost.get("title"));
-								}
-								if(postPost.containsKey("isfirstshown")){
-									post.isfirstshown = Functions.convertToBoolean(postPost.get("isfirstshown"));
-								}
-								if(postPost.containsKey("islastshown")){
-										post.islastshown = Functions.convertToBoolean(postPost.get("islastshown"));
-								}
-								if(postPost.containsKey("message")){
-									post.message = Functions.convertToString(postPost.get("message"));
-								}
-								if(postPost.containsKey("message_plain")){
-									post.message_plain = Functions.convertToString(postPost.get("message_plain"));
-								}
-								if(postPost.containsKey("message_bbcode")){
-									post.message_bbcode = Functions.convertToString(postPost.get("message_bbcode"));
-								}
-								thread.posts.add(post);
-							}
-						}
-					}
-					else if(((LinkedTreeMap)response.get("response")).get("postbits") instanceof LinkedTreeMap){//single post
-						System.out.println("postbits is map");
-						LinkedTreeMap postHolder = (LinkedTreeMap) ((LinkedTreeMap)response.get("response")).get("postbits");
-						if(postHolder.containsKey("post")){
-							Post post = new Post();
-							LinkedTreeMap postPost = (LinkedTreeMap) postHolder.get("post");
-							if(postPost.containsKey("postid")){
-								post.postid = Functions.convertToInt(postPost.get("postid"));
-							}
-							if(postPost.containsKey("posttime")){
-								if(Functions.isInteger((String) postPost.get("posttime"))){
-									post.posttime = Long.parseLong((String) postPost.get("posttime"));
-								}
-							}
-							if(postPost.containsKey("threadid")){
-								post.threadid = Functions.convertToInt(postPost.get("threadid"));
-							}
-							if(postPost.containsKey("userid")){
-								post.userid = Functions.convertToInt(postPost.get("userid"));
-							}
-							if(postPost.containsKey("username")){
-								post.username = (String) postPost.get("username");
-							}
-							if(postPost.containsKey("avatarurl")){
-								post.avatarurl = (String) postPost.get("avatarurl");
-							}
-							if(postPost.containsKey("usertitle")){
-								post.usertitle = (String) postPost.get("usertitle");
-							}
-							if(postPost.containsKey("joindate")){
-								if(Functions.isInteger((String) postPost.get("joindate"))){
-									post.joindate = Long.parseLong((String) postPost.get("joindate"));
-								}
-							}
-							if(postPost.containsKey("title")){
-								post.title = (String) postPost.get("title");
-							}
-							if(postPost.containsKey("isfirstshown")){
-								if(Functions.convertToInt(postPost.get("isfirstshown")) == 1){
-									post.isfirstshown = true;
-								}
-								else{post.isfirstshown = false;}
-							}
-							if(postPost.containsKey("islastshown")){
-								if(Functions.convertToInt(postPost.get("islastshown")) == 1){
-									post.islastshown = true;
-								}
-								else{post.islastshown = false;}
-							}
-							if(postPost.containsKey("message")){
-								post.message = (String) postPost.get("message");
-							}
-							if(postPost.containsKey("message_plain")){
-								post.message_plain = (String) postPost.get("message_plain");
-							}
-							if(postPost.containsKey("message_bbcode")){
-								post.message_bbcode = (String) postPost.get("message_bbcode");
-							}
-							thread.posts.add(post);
-						}
-					}
-				}
-				if(((LinkedTreeMap)response.get("response")).containsKey("errormessage")){
-					String theError = "";
-					String errorSecond = "";
-					String className = ((LinkedTreeMap)response.get("response")).get("errormessage").getClass().getName();
-					if(className.equals("java.lang.String")){
-						theError = ((String) ((LinkedTreeMap)response.get("response")).get("errormessage"));
-						if(theError.equals("redirect_postthanks")){//this is for newthread and newpost
-							if(response.containsKey("show")){
-								if(((LinkedTreeMap)response.get("show")).containsKey("threadid")){
-									theError = ""+Functions.convertToInt(((LinkedTreeMap)response.get("show")).get("threadid"));
-									theError += " "+Functions.convertToInt(((LinkedTreeMap)response.get("show")).get("postid"));
-								}
-							}
-						}
-					}
-					else if(className.equals("java.util.ArrayList")){
-						Object[] errors = ((ArrayList) ((LinkedTreeMap)response.get("response")).get("errormessage")).toArray();
-						if(errors.length > 0){
-							theError = errors[0].toString();
-						}
-						if(errors.length > 1){
-							errorSecond = errors[1].toString();
-						}
-					}
-					//parse theError here
-					if(theError.equals("noid")){
-						System.out.println("Thread Parse InvalidId "+errorSecond);
-						throw new InvalidId(errorSecond);
-					}
-					errorsCommon(theError);
-					System.out.println("responseError  response -> errormessage type unknown: "+className);
-					throw new VBulletinAPIException("vBulletin API Unknown Error - "+className);
-				}
-			}
-		}
-		if(DEBUG){
-			System.out.println("thread all ->");
-			System.out.println(response.toString());
-		}
-		return thread;
-	}
-	/** Parses json from viewMember into
-	 * username
-	 * forumid
-	 * forumjoindate
-	 * avatarurl
-	 * @param response from viewMember (callMethod)
-	 * @return HashMap<String, String>
-	 * @throws APIIllegalStateException
-	 * @throws APIIOException
-	 * @throws APISocketTimeoutException
-	 * @throws InvalidAccessToken
-	 * @throws NoPermissionLoggedin
-	 * @throws NoPermissionLoggedout
-	 * @throws InvalidAPISignature
-	 */
-	@SuppressWarnings("rawtypes")
-	private Member parseViewMember(LinkedTreeMap<String, Object> response) throws NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		Member theReturn = new Member();
-		if(response != null){
-			String className = null;
-			if(response.containsKey("response")){
-				//response -> prepared
-				if(((LinkedTreeMap)response.get("response")).containsKey("prepared")){
-					className = ((LinkedTreeMap)response.get("response")).get("prepared").getClass().getName();
-					if(className.equals("com.google.gson.internal.LinkedTreeMap")){
-						LinkedTreeMap prepared = (LinkedTreeMap) ((LinkedTreeMap)response.get("response")).get("prepared");
-						if(prepared.containsKey("username")){
-							className = prepared.get("username").getClass().getName();
-							if(className.equals("java.lang.String")){
-								theReturn.username = (String) prepared.get("username");
-							}
-						}
-						if(prepared.containsKey("userid")){
-							className = prepared.get("userid").getClass().getName();
-							if(className.equals("java.lang.String")){
-								theReturn.userid = (String) prepared.get("userid");
-							}
-						}
-						if(prepared.containsKey("public String username;")){
-							className = prepared.get("joindate").getClass().getName();
-							if(className.equals("java.lang.String")){
-								theReturn.joindate = (String) prepared.get("joindate");
-							}
-						}
-						if(prepared.containsKey("avatarurl")){
-							className = prepared.get("avatarurl").getClass().getName();
-							if(className.equals("java.lang.String")){
-								theReturn.avatarurl = (String) prepared.get("avatarurl");
-							}
-						}
-					}
-				}
-				if(((LinkedTreeMap)response.get("response")).containsKey("errormessage")){
-					String theError = "";
-					className = ((LinkedTreeMap)response.get("response")).get("errormessage").getClass().getName();
-					if(className.equals("java.lang.String")){
-						theError = ((String) ((LinkedTreeMap)response.get("response")).get("errormessage"));
-						if(theError.equals("redirect_postthanks")){//this is for newthread and newpost
-							if(response.containsKey("show")){
-								if(((LinkedTreeMap)response.get("show")).containsKey("threadid")){
-									theError = ""+Functions.convertToInt(((LinkedTreeMap)response.get("show")).get("threadid"));
-									theError += " "+Functions.convertToInt(((LinkedTreeMap)response.get("show")).get("postid"));
-								}
-							}
-						}
-					}
-					else if(className.equals("java.util.ArrayList")){
-						Object[] errors = ((ArrayList) ((LinkedTreeMap)response.get("response")).get("errormessage")).toArray();
-						if(errors.length > 0){
-							theError = errors[0].toString();
-						}
-					}
-					errorsCommon(theError);
-					System.out.println("responseError  response -> errormessage type unknown: "+className);
-					throw new VBulletinAPIException("vBulletin API Unknown Error - "+className);
-				}
-			}
-		}
-		if(DEBUG){
-			System.out.println("member all ->");
-			System.out.println(response.toString());
-		}
-		return theReturn;
-	}
+	
+	
 	/**Attempts to empty the primary PM Inbox
 	 * @param folderid which folder to empty
 	 * @return true on success
@@ -1379,6 +898,16 @@ public final class VBulletinAPI extends Thread{
 			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
 		}
 		throw new NoConnectionException();
+	}
+	/**Grabs the message from the PM specified by the pmID
+	 * @param pmId
+	 * @return message text as String
+	 * @throws InvalidId on non existent Private Message
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws VBulletinAPIException when less common errors occur
+	 */
+	public String pm_ViewPM(int pmId) throws InvalidId, NoPermissionLoggedout, VBulletinAPIException{
+		return pm_ViewPM(pmId+"", 0);
 	}
 	/**Grabs the message from the PM specified by the pmID
 	 * @param pmId
@@ -2060,7 +1589,7 @@ public final class VBulletinAPI extends Thread{
 			if(perpage != null){params.put("perpage", perpage);}
 			if(loop < 4){//no infinite loop by user
 				try {
-					thread = parseThread(callMethod("showthread", params, true));
+					thread = new ForumThread().parse(callMethod("showthread", params, true));
 				} catch (InvalidAccessToken e) {
 					forum_Login();
 					if(isLoggedin()){
@@ -2078,7 +1607,7 @@ public final class VBulletinAPI extends Thread{
 				}
 				return thread;
 			}
-			parseThread(callMethod("showthread", params, true));
+			return new ForumThread().parse(callMethod("showthread", params, true));
 		}
 		throw new NoConnectionException();
 	}
