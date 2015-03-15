@@ -252,7 +252,7 @@ public final class VBulletinAPI extends Thread{
 			//String errorMsg = "";
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
-			params.put("forumid", "88");
+			params.put("forumid", "293");
 			
 			parseForumDisplay(callMethod("forumdisplay", params, true));
 
@@ -482,10 +482,12 @@ public final class VBulletinAPI extends Thread{
 	 */
 	@SuppressWarnings("rawtypes")
 	private Forum parseForumDisplay(LinkedTreeMap<String, Object> response) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		System.out.println(response);
 		Forum forum = new Forum();
 		if(response != null){
 			if(response.containsKey("response")){
-				LinkedTreeMap response2 = (LinkedTreeMap)response.get("response");
+				@SuppressWarnings("unchecked")
+				LinkedTreeMap<String, Object> response2 = (LinkedTreeMap<String, Object>)response.get("response");
 				if(response2.containsKey("daysprune")){
 					forum.daysprune = Functions.convertToInt(response2.get("daysprune"));
 				}
@@ -917,36 +919,38 @@ public final class VBulletinAPI extends Thread{
 		ForumThread thread = new ForumThread();
 		if(response != null){
 			if(response.containsKey("response")){
-				if(((LinkedTreeMap)response.get("response")).containsKey("totalposts")){
-					thread.totalposts = new Double((double) ((LinkedTreeMap)response.get("response")).get("totalposts")).intValue();
-
+				@SuppressWarnings("unchecked")
+				LinkedTreeMap<String, Object> response2 = (LinkedTreeMap<String, Object>)response.get("response");
+				if(response2.containsKey("totalposts")){
+					thread.totalposts = Functions.convertToInt(response2.get("totalposts"));
 				}
-				if(((LinkedTreeMap)response.get("response")).containsKey("FIRSTPOSTID")){
-					thread.FIRSTPOSTID = Functions.convertToInt(((LinkedTreeMap)response.get("response")).get("FIRSTPOSTID"));
+				if(response2.containsKey("FIRSTPOSTID")){
+					thread.FIRSTPOSTID = Functions.convertToInt(response2.get("FIRSTPOSTID"));
 				}
-				if(((LinkedTreeMap)response.get("response")).containsKey("LASTPOSTID")){
-					thread.LASTPOSTID = Functions.convertToInt(((LinkedTreeMap)response.get("response")).get("LASTPOSTID"));
+				if(response2.containsKey("LASTPOSTID")){
+					thread.LASTPOSTID = Functions.convertToInt(response2.get("LASTPOSTID"));
 				}
-				if(((LinkedTreeMap)response.get("response")).containsKey("pagenumber")){
-					thread.pagenumber = Functions.convertToInt(((LinkedTreeMap)response.get("response")).get("pagenumber"));
+				if(response2.containsKey("pagenumber")){
+					thread.pagenumber = Functions.convertToInt(response2.get("pagenumber"));
 				}
-				if(((LinkedTreeMap)response.get("response")).containsKey("perpage")){
-					thread.perpage = Functions.convertToInt(((LinkedTreeMap)response.get("response")).get("perpage"));
+				if(response2.containsKey("perpage")){
+					thread.perpage = Functions.convertToInt(response2.get("perpage"));
 				}
-				if(((LinkedTreeMap)response.get("response")).containsKey("postbits")){
-					if(((LinkedTreeMap)response.get("response")).get("postbits") instanceof ArrayList){//multiple posts
+				if(response2.containsKey("postbits")){
+					if(response2.get("postbits") instanceof ArrayList){//multiple posts
 						@SuppressWarnings("unchecked")
-						ArrayList<LinkedTreeMap> postbits = (ArrayList<LinkedTreeMap>) ((LinkedTreeMap)response.get("response")).get("postbits");
-						for(LinkedTreeMap postHolder : postbits){
+						ArrayList<LinkedTreeMap<String, Object>> postbits = (ArrayList<LinkedTreeMap<String, Object>>) response2.get("postbits");
+						for(LinkedTreeMap<String, Object> postHolder : postbits){
 							if(postHolder.containsKey("post")){
 								Post post = new Post();
-								LinkedTreeMap postPost = (LinkedTreeMap) postHolder.get("post");
+								@SuppressWarnings("unchecked")
+								LinkedTreeMap<String, Object> postPost = (LinkedTreeMap<String, Object>) postHolder.get("post");
 								if(postPost.containsKey("postid")){
 									post.postid = Functions.convertToInt(postPost.get("postid"));
 								}
 								if(postPost.containsKey("posttime")){
 									if(Functions.isInteger((String) postPost.get("posttime"))){
-										post.posttime = Long.parseLong((String) postPost.get("posttime"));
+										post.posttime = Long.parseLong((String) postPost.get("posttime"));//TODO check
 									}
 								}
 								if(postPost.containsKey("threadid")){
@@ -956,42 +960,36 @@ public final class VBulletinAPI extends Thread{
 									post.userid = Functions.convertToInt(postPost.get("userid"));
 								}
 								if(postPost.containsKey("username")){
-									post.username = (String) postPost.get("username");
+									post.username = Functions.convertToString(postPost.get("username"));
 								}
 								if(postPost.containsKey("avatarurl")){
-									post.avatarurl = (String) postPost.get("avatarurl");
+									post.avatarurl = Functions.convertToString(postPost.get("avatarurl"));
 								}
 								if(postPost.containsKey("usertitle")){
-									post.usertitle = (String) postPost.get("usertitle");
+									post.usertitle = Functions.convertToString(postPost.get("usertitle"));
 								}
 								if(postPost.containsKey("joindate")){
 									if(Functions.isInteger((String) postPost.get("joindate"))){
-										post.joindate = Long.parseLong((String) postPost.get("joindate"));
+										post.joindate = Long.parseLong((String) postPost.get("joindate"));//TODO check
 									}
 								}
 								if(postPost.containsKey("title")){
-									post.title = (String) postPost.get("title");
+									post.title = Functions.convertToString(postPost.get("title"));
 								}
 								if(postPost.containsKey("isfirstshown")){
-									if(Functions.convertToInt(postPost.get("isfirstshown")) == 1){
-										post.isfirstshown = true;
-									}
-									else{post.isfirstshown = false;}
+									post.isfirstshown = Functions.convertToBoolean(postPost.get("isfirstshown"));
 								}
 								if(postPost.containsKey("islastshown")){
-									if(Functions.convertToInt(postPost.get("islastshown")) == 1){
-										post.islastshown = true;
-									}
-									else{post.islastshown = false;}
+										post.islastshown = Functions.convertToBoolean(postPost.get("islastshown"));
 								}
 								if(postPost.containsKey("message")){
-									post.message = (String) postPost.get("message");
+									post.message = Functions.convertToString(postPost.get("message"));
 								}
 								if(postPost.containsKey("message_plain")){
-									post.message_plain = (String) postPost.get("message_plain");
+									post.message_plain = Functions.convertToString(postPost.get("message_plain"));
 								}
 								if(postPost.containsKey("message_bbcode")){
-									post.message_bbcode = (String) postPost.get("message_bbcode");
+									post.message_bbcode = Functions.convertToString(postPost.get("message_bbcode"));
 								}
 								thread.posts.add(post);
 							}
