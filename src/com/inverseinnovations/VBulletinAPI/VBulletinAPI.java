@@ -1,6 +1,5 @@
 package com.inverseinnovations.VBulletinAPI;
 
-import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,7 +7,6 @@ import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,21 +39,6 @@ public final class VBulletinAPI extends Thread{
 	private String username;
 	private String password;//TODO need a more secure storage
 
-	/**
-	 * Returns a String built from the InputStream
-	 * @param inputStream
-	 * @return
-	 * @throws IOException
-	 */
-	private String inputStreamToString(InputStream inputStream) throws IOException {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		byte[] buffer = new byte[1024];
-		int length = 0;
-		while ((length = inputStream.read(buffer)) != -1) {
-			baos.write(buffer, 0, length);
-		}
-		return new String(baos.toByteArray(), Charset.defaultCharset());
-	}
 	/**
 	 * Instantiates a new vBulletin API wrapper. This will initialize the API
 	 * connection as well, with OS name and version pulled from property files
@@ -112,8 +95,8 @@ public final class VBulletinAPI extends Thread{
 	 *             whatever reason.
 	 */
 	public VBulletinAPI(String username, String password, String apiURL, String apikey, String clientname,String clientversion){ //throws IOException {
-		this.apiURL = apiURL;
-		this.apikey = apikey;
+		this.setAPIURL(apiURL);
+		this.setAPIkey(apikey);
 		this.clientname = clientname;
 		this.clientversion = clientversion;
 		this.setName("vBulletinAPI");
@@ -172,7 +155,7 @@ public final class VBulletinAPI extends Thread{
 			}
 			finally{
 				if(is != null){
-					String json = inputStreamToString(is);
+					String json = Functions.inputStreamToString(is);
 
 					//need to remove everything before {
 					if(json.contains("{")){
@@ -308,7 +291,7 @@ public final class VBulletinAPI extends Thread{
 	 * @throws BadCredentials
 	 * @throws VBulletinAPIException
 	 */
-	public boolean forum_Logout() throws BadCredentials, VBulletinAPIException{
+	protected boolean forum_Logout() throws BadCredentials, VBulletinAPIException{
 		if(isConnected()){
 			String errorMsg = "";
 			for(int i = 0;i < 3;i++){
@@ -384,7 +367,7 @@ public final class VBulletinAPI extends Thread{
 	 *
 	 * @return the API client ID
 	 */
-	public String getAPIClientID() {
+	protected String getAPIClientID() {
 		return apiClientID;
 	}
 	/**
@@ -400,7 +383,7 @@ public final class VBulletinAPI extends Thread{
 	 *
 	 * @return the URL
 	 */
-	public String getAPIURL() {
+	protected String getAPIURL() {
 		return apiURL;
 	}
 	/**
@@ -452,13 +435,13 @@ public final class VBulletinAPI extends Thread{
 	/**
 	 * Returns if connected into vBulletin forum
 	 */
-	public boolean isConnected(){
+	public synchronized boolean isConnected(){
 		return CONNECTED;
 	}
 	/**Is the username and password set?
 	 * @return
 	 */
-	public boolean isCredentialsSet(){
+	public synchronized boolean isCredentialsSet(){
 		if(username != null && password != null){
 			if(!username.isEmpty() && !password.isEmpty()){
 				return true;
@@ -469,7 +452,7 @@ public final class VBulletinAPI extends Thread{
 	/**
 	 * Returns if logged into vBulletin forum
 	 */
-	public boolean isLoggedin(){
+	public synchronized boolean isLoggedin(){
 		return LOGGEDIN;
 	}
 
@@ -1172,7 +1155,7 @@ public final class VBulletinAPI extends Thread{
 	 * @param apiAccessToken
 	 *            the new API access token
 	 */
-	private void setAPIAccessToken(String apiAccessToken) {
+	private synchronized void setAPIAccessToken(String apiAccessToken) {
 		this.apiAccessToken = apiAccessToken;
 	}
 	/**
@@ -1182,7 +1165,7 @@ public final class VBulletinAPI extends Thread{
 	 * @param apiClientID
 	 *            the new API client ID
 	 */
-	public void setAPIClientID(String apiClientID) {
+	protected synchronized void setAPIClientID(String apiClientID) {
 		this.apiClientID = apiClientID;
 	}
 	/**
@@ -1191,7 +1174,7 @@ public final class VBulletinAPI extends Thread{
 	 * @param apikey
 	 *            the new API key
 	 */
-	public void setAPIkey(String apikey) {
+	public synchronized void setAPIkey(String apikey) {
 		this.apikey = apikey;
 	}
 	/**
@@ -1200,25 +1183,25 @@ public final class VBulletinAPI extends Thread{
 	 * @param apiURL
 	 *            the new URL
 	 */
-	public void setAPIURL(String apiURL) {
+	public synchronized void setAPIURL(String apiURL) {
 		this.apiURL = apiURL;
 	}
 	/**
 	 * Sets if the API successfully connected to the Forum
 	 */
-	private void setConnected(boolean arg){
+	private synchronized void setConnected(boolean arg){
 		this.CONNECTED = arg;
 	}
 	/**
 	 * Sets if the API successfully logged into the Forum
 	 */
-	private void setLoggedin(boolean arg){
+	private synchronized void setLoggedin(boolean arg){
 		this.LOGGEDIN = arg;
 	}
 	/**Sets the password to login
 	 * @param pass
 	 */
-	public void setPassword(String pass) {
+	public synchronized void setPassword(String pass) {
 		this.password = pass;
 	}
 	/**
@@ -1228,13 +1211,13 @@ public final class VBulletinAPI extends Thread{
 	 * @param secret
 	 *            the new secret value
 	 */
-	private void setSecret(String secret) {
+	private synchronized void setSecret(String secret) {
 		this.secret = secret;
 	}
 	/**Sets the username to login
 	 * @param user
 	 */
-	public void setUsername(String user) {
+	public synchronized void setUsername(String user) {
 		this.username = user;
 	}
 	/**Attempts to close a Thread in the forum
@@ -1503,7 +1486,7 @@ public final class VBulletinAPI extends Thread{
 			HashMap<String, String> params = new HashMap<String, String>();
 			params.put("threadid", threadid);
 			errorMsg = parseResponse(callMethod("inlinemod_open", params, true));
-			if(loop < 4){//no inifinite loop by user
+			if(loop < 4){//no infinite loop by user
 				if(errorMsg != null){
 					if(errorMsg.length() > 0){
 						if(errorMsg.equals("something...need success")){//success//TODO need the success result....
@@ -1623,12 +1606,12 @@ public final class VBulletinAPI extends Thread{
 		boolean success = false;
 		ForumThread thread = null;
 		thread = thread_View(threadid, 1, 1);//just the first post
-		success = true;
-		if(success){
+		success = true;//TODO what the heck was the point of these if checks?!?!?!
+		if(success){//TODO need to check thread
 			success = false;
 			thread = thread_View(threadid, thread.totalposts, 1);
 			success = true;
-			if(success){
+			if(success){//TODO need to check thread
 				for(Post post : thread.posts){
 					if(post.islastshown){
 						return post;

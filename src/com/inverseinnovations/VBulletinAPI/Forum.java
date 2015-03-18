@@ -9,28 +9,28 @@ import com.inverseinnovations.VBulletinAPI.Exception.NoPermissionLoggedout;
 import com.inverseinnovations.VBulletinAPI.Exception.VBulletinAPIException;
 
 public class Forum{
-	public int forumid;
-	public int threadcount;
-	public int replycount;
-	public String title;
-	public String title_clean;
-	public String description;
-	public String description_clean;
-	public int prefixrequired;
-	public String statusicon; //(link)
-	public int browsers;
-	public boolean parent_is_category;
-	public int numberguest;
-	public int numberregistered;
-	public int totalmods;
-	public int totalonline;
-	public int totalthreads;
-	public int pagenumber;
-	public int perpage;
-	public int limitlower;
-	public int limitupper;
-	public int daysprune;
-	public ArrayList<Forum> subforums = new ArrayList<Forum>();//subforums and childforums are the same thing
+	protected int forumid;
+	protected int threadcount;
+	protected int replycount;
+	protected String title;
+	protected String title_clean;
+	protected String description;
+	protected String description_clean;
+	protected int prefixrequired;//TODO boolean?
+	protected String statusicon; //(link)
+	protected int browsers;
+	protected boolean parent_is_category;
+	protected int numberguest;
+	protected int numberregistered;
+	protected int totalmods;
+	protected int totalonline;
+	protected int totalthreads;
+	protected int pagenumber;
+	protected int perpage;
+	protected int limitlower;
+	protected int limitupper;
+	protected int daysprune;
+	protected ArrayList<Forum> subforums = new ArrayList<Forum>();//subforums and childforums are the same thing
 	/*activeusers={
 			1=[]
 	},*/
@@ -123,6 +123,94 @@ public class Forum{
 		forumslist=1.0,
 		stickies=0.0*/
 	
+	public int getForumId() {
+		return forumid;
+	}
+
+	public int getThreadCount() {
+		return threadcount;
+	}
+
+	public int getReplyCount() {
+		return replycount;
+	}
+
+	public String getTitle() {
+		return title;
+	}
+
+	public String getTitleClean() {
+		return title_clean;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public String getDescriptionClean() {
+		return description_clean;
+	}
+
+	public int getPrefixRequired() {//TODO boolean?
+		return prefixrequired;
+	}
+
+	public String getStatusIcon() {
+		return statusicon;
+	}
+
+	public int getBrowsers() {
+		return browsers;
+	}
+
+	public boolean isParentIsCategory() {
+		return parent_is_category;
+	}
+
+	public int getNumberGuest() {
+		return numberguest;
+	}
+
+	public int getNumberRegistered() {
+		return numberregistered;
+	}
+
+	public int getTotalMods() {
+		return totalmods;
+	}
+
+	public int getTotalOnline() {
+		return totalonline;
+	}
+
+	public int getTotalThreads() {
+		return totalthreads;
+	}
+
+	public int getPageNumber() {
+		return pagenumber;
+	}
+
+	public int getPerPage() {
+		return perpage;
+	}
+
+	public int getLimitLower() {
+		return limitlower;
+	}
+
+	public int getLimitUpper() {
+		return limitupper;
+	}
+
+	public int getDaysPrune() {
+		return daysprune;
+	}
+
+	public ArrayList<Forum> getSubForums() {
+		return new ArrayList<Forum>(subforums);
+	}
+
 	/**Returns a Forum containing all the Forums within
 	 * @param response from callMethod
 	 * @return

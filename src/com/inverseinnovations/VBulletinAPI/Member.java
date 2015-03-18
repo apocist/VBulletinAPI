@@ -13,13 +13,45 @@ import com.inverseinnovations.VBulletinAPI.Exception.NoPermissionLoggedout;
 import com.inverseinnovations.VBulletinAPI.Exception.VBulletinAPIException;
 
 public class Member{
-	public String username;
-	public int userid;
-	public String avatarurl;
-	public String usertitle;
-	public String joindate;//TODO is this string?(need to check)
+	protected String username;
+	protected int userid;
+	protected String avatarurl;
+	protected String usertitle;
+	protected String joindate;//TODO is this string?(need to check)
 	//TODO many variables missing
 	
+	
+	
+	public String getUsername() {
+		return username;
+	}
+
+
+
+	public int getUserId() {
+		return userid;
+	}
+
+
+
+	public String getAvatarUrl() {
+		return avatarurl;
+	}
+
+
+
+	public String getUserTitle() {
+		return usertitle;
+	}
+
+
+
+	public String getJoinDate() {
+		return joindate;
+	}
+
+
+
 	/** Parses json from viewMember into
 	 * username
 	 * forumid

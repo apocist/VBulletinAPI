@@ -3,16 +3,16 @@ package com.inverseinnovations.VBulletinAPI;
 import java.util.ArrayList;
 
 public class ForumHome{
-	public int notifications_total;
-	public int activemembers;
-	public int numberguest;
-	public int numbermembers;
-	public int numberregistered;
-	public int recordusers;
-	public int totalonline;
-	public int totalposts;
-	public int totalthreads;
-	public ArrayList<Forum> subforums = new ArrayList<Forum>();
+	protected int notifications_total;
+	protected int activemembers;
+	protected int numberguest;
+	protected int numbermembers;
+	protected int numberregistered;
+	protected int recordusers;
+	protected int totalonline;
+	protected int totalposts;
+	protected int totalthreads;
+	protected ArrayList<Forum> subforums = new ArrayList<Forum>();
 	//recordtime=1.411365986E9,
 	//today=2015-03-06,
 	/*pmbox={lastvisittime=1410109725},
@@ -57,4 +57,35 @@ public class ForumHome{
 		activemembers=1.0
 	}
 	 */
+	public int getNotificationsTotal() {
+		return notifications_total;
+	}
+	public int getActiveMembers() {
+		return activemembers;
+	}
+	public int getNumberGuest() {
+		return numberguest;
+	}
+	public int getNumberMembers() {
+		return numbermembers;
+	}
+	public int getNumberRegistered() {
+		return numberregistered;
+	}
+	public int getRecordUsers() {
+		return recordusers;
+	}
+	public int getTotalOnline() {
+		return totalonline;
+	}
+	public int getTotalPosts() {
+		return totalposts;
+	}
+	public int getTotalThreads() {
+		return totalthreads;
+	}
+	public ArrayList<Forum> getSubForums() {
+		return new ArrayList<Forum>(subforums);
+	}
+	
 }

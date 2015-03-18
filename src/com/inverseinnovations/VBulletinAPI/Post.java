@@ -3,21 +3,77 @@ package com.inverseinnovations.VBulletinAPI;
 import com.google.gson.internal.LinkedTreeMap;
 
 public class Post{
-	public int postid;
-	public long posttime;
-	public int threadid;
-	public int userid;
-	public String username;
-	public String avatarurl;
-	public String usertitle;
-	public long joindate;
-	public String title;
-	public boolean isfirstshown;
-	public boolean islastshown;
-	public String message;
-	public String message_plain;
-	public String message_bbcode;
+	protected int postid;
+	protected long posttime;
+	protected int threadid;
+	protected int userid;
+	protected String username;
+	protected String avatarurl;
+	protected String usertitle;
+	protected long joindate;
+	protected String title;
+	protected boolean isfirstshown;
+	protected boolean islastshown;
+	protected String message;
+	protected String message_plain;
+	protected String message_bbcode;
 	
+	public int getPostId() {
+		return postid;
+	}
+
+	public long getPostTime() {
+		return posttime;
+	}
+
+	public int getThreadId() {
+		return threadid;
+	}
+
+	public int getUserId() {
+		return userid;
+	}
+
+	public String getUsername() {
+		return username;
+	}
+
+	public String getAvatarUrl() {
+		return avatarurl;
+	}
+
+	public String getUserTitle() {
+		return usertitle;
+	}
+
+	public long getJoinDate() {
+		return joindate;
+	}
+
+	public String getTitle() {
+		return title;
+	}
+
+	public boolean isFirstShown() {
+		return isfirstshown;
+	}
+
+	public boolean isLastShown() {
+		return islastshown;
+	}
+
+	public String getMessage() {
+		return message;
+	}
+
+	public String getMessagePlain() {
+		return message_plain;
+	}
+
+	public String getMessageBbcode() {
+		return message_bbcode;
+	}
+
 	/**Returns a Post after parsing the LinkedTreeMap
 	 * @param LinkedTreeMap from ForumThread
 	 * @return Post

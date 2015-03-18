@@ -11,28 +11,89 @@ import com.inverseinnovations.VBulletinAPI.Exception.VBulletinAPIException;
 
 public class ForumThread{
 	
-	public int totalposts;
-	public int FIRSTPOSTID;
-	public int LASTPOSTID;
-	public int pagenumber;
-	public int perpage;
+	protected int totalposts;
+	protected int FIRSTPOSTID;
+	protected int LASTPOSTID;
+	protected int pagenumber;
+	protected int perpage;
 	
-	public ArrayList<Post> posts = new ArrayList<Post>();
+	protected ArrayList<Post> posts = new ArrayList<Post>();
 	
-	public int numberguest;
-	public int numberregistered;
+	protected int numberguest;
+	protected int numberregistered;
 	
 	//Not implemented yet
 	
-	public String meta_description;
-	public String title;
-	public int forumid;
-	public int totalonline;
+	protected String meta_description;
+	protected String title;
+	protected int forumid;
+	protected int totalonline;
 	//public String tag_list;
 	//public String keywords;
 	//show
 	//public String forumrules;
 	
+	
+	public int getTotalPosts() {
+		return totalposts;
+	}
+
+
+	public int getFirstPostId() {
+		return FIRSTPOSTID;
+	}
+
+
+	public int getLastPostId() {
+		return LASTPOSTID;
+	}
+
+
+	public int getPageNumber() {
+		return pagenumber;
+	}
+
+
+	public int getPerPage() {
+		return perpage;
+	}
+
+
+	public ArrayList<Post> getPosts() {
+		return new ArrayList<Post>(posts);
+	}
+
+
+	public int getNumberGuest() {
+		return numberguest;
+	}
+
+
+	public int getNumberRegistered() {
+		return numberregistered;
+	}
+
+
+	public String getMetaDescription() {
+		return meta_description;
+	}
+
+
+	public String getTitle() {
+		return title;
+	}
+
+
+	public int getForumId() {
+		return forumid;
+	}
+
+
+	public int getTotalOnline() {
+		return totalonline;
+	}
+
+
 	/**Returns a Thread containing all the Posts within(or specified)
 	 * @param response from callMethod
 	 * @return

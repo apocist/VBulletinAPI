@@ -1,19 +1,34 @@
 package com.inverseinnovations.VBulletinAPI;
 
-import com.inverseinnovations.VBulletinAPI.Functions;
-
 public class Message{
-	public int pmid;
-	public String sendtime;//TODO is this a String?(check)
-	public String statusicon;
-	public String title;
-	public int userid;
-	public String username;
-	public String message = "";
-
-	public void setUserid(String id){
-		if(Functions.isInteger(id)){
-			userid = Integer.parseInt(id);
-		}
+	protected int pmid;
+	protected String sendtime;//TODO is this a String?(check)
+	protected String statusicon;
+	protected String title;
+	protected int userid;
+	protected String username;
+	protected String message = "";
+	
+	public int getPmid() {
+		return pmid;
 	}
+	public String getSendTime() {
+		return sendtime;
+	}
+	public String getStatusIcon() {
+		return statusicon;
+	}
+	public String getTitle() {
+		return title;
+	}
+	public int getUserId() {
+		return userid;
+	}
+	public String getUsername() {
+		return username;
+	}
+	public String getMessage() {
+		return message;
+	}
+
 }

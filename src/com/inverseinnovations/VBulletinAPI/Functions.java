@@ -1,10 +1,14 @@
 package com.inverseinnovations.VBulletinAPI;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 
-public class Functions {
+class Functions {
 	
 	/**Converts raw objects(String/Integer/Boolean/Double) to Int
 	 * @param obj
@@ -81,6 +85,21 @@ public class Functions {
 			retur = (Boolean)object;
 		}
 		return retur;
+	}
+	/**
+	 * Returns a String built from the InputStream
+	 * @param inputStream
+	 * @return
+	 * @throws IOException
+	 */
+	protected static String inputStreamToString(InputStream inputStream) throws IOException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		byte[] buffer = new byte[1024];
+		int length = 0;
+		while ((length = inputStream.read(buffer)) != -1) {
+			baos.write(buffer, 0, length);
+		}
+		return new String(baos.toByteArray(), Charset.defaultCharset());
 	}
 	/**
 	 * Checks if a String may be translated as an int
