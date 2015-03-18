@@ -1,17 +1,12 @@
 package com.inverseinnovations.VBulletinAPI;
 
-import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
-import java.text.CharacterIterator;
-import java.text.StringCharacterIterator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,159 +23,9 @@ import com.inverseinnovations.VBulletinAPI.Exception.*;
 
 /** A class to provide an easy to use wrapper around the vBulletin REST API.*/
 public final class VBulletinAPI extends Thread{
-	public class ForumThread{
-		public int totalposts;
-		public int FIRSTPOSTID;
-		public int LASTPOSTID;
-		public int pagenumber;
-		public int perpage;
-		//public String forumrules;
-		public ArrayList<Post> posts = new ArrayList<Post>();
-	}
-	public class Message{
-		public String pmid;
-		public String sendtime;
-		public String statusicon;
-		public String title;
-		public int userid;
-		public String username;
-		public String message = "";
-
-		public void setUserid(String id){
-			if(isInteger(id)){
-				userid = Integer.parseInt(id);
-			}
-		}
-	}
-	public class Post{
-		public int postid;
-		public long posttime;
-		public int threadid;
-		public int userid;
-		public String username;
-		public String avatarurl;
-		public String usertitle;
-		public long joindate;
-		public String title;
-		public boolean isfirstshown;
-		public boolean islastshown;
-		public String message;
-		public String message_plain;
-		public String message_bbcode;
-	}
-	public class Member{
-		public String username;
-		public String userid;
-		public String avatarurl;
-		public String usertitle;
-		public String joindate;
-	}
-	final public static double VERSION = 0.3;
+	final public static double VERSION = 0.4;
 	final public static boolean DEBUG = true;
-	/**
-	 * Checks if a String may be translated as an int
-	 * @param s String to check
-	 */
-	private static boolean isInteger(String s){
-		if(s != null && s != "")return isInteger(s,10);
-		return false;
-	}
-	private static boolean isInteger(String s, int radix){
-		if(s.isEmpty()) return false;
-		for(int i = 0; i < s.length(); i++) {
-			if(i == 0 && s.charAt(i) == '-') {
-				if(s.length() == 1) return false;
-				continue;
-			}
-			if(Character.digit(s.charAt(i),radix) < 0) return false;
-		}
-		return true;
-	}
-	/**
-	 * Encrypts a String to MD5
-	 * @param md5 String
-	 * @return String encrypted to MD5
-	 */
-	private static final String MD5(String str) {
-		try {
-			java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-			final byte[] array = md.digest(str.getBytes("UTF-8"));
-			StringBuffer sb = new StringBuffer();
-			for (int i = 0; i < array.length; ++i) {
-				sb.append(Integer.toHexString((array[i] & 0xFF) | 0x100).substring(1,3));
-			}
-			return sb.toString();
-		}
-		catch (java.security.NoSuchAlgorithmException e) {}
-		catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
-	private static void queryAddCharEntity(Integer aIdx, StringBuilder aBuilder){
-		String padding = "";
-		if( aIdx <= 9 ){
-		padding = "00";
-		}
-		else if( aIdx <= 99 ){
-		padding = "0";
-		}
-		else {
-		//no prefix
-		}
-		String number = padding + aIdx.toString();
-		aBuilder.append("&#" + number + ";");
-	}
-	private static String querySafeString(String aText){
-		final StringBuilder result = new StringBuilder();
-		if(aText != null){
-			final StringCharacterIterator iterator = new StringCharacterIterator(aText);
-			char character =  iterator.current();
-			while (character != CharacterIterator.DONE ){
-				if (character == '"') {
-					result.append("&quot;");
-					//result.append("%22");
-				}
-				else if (character == '\"') {
-					result.append("&quot;");
-					//result.append("%22");
-				}
-				else if (character == '\t') {
-					queryAddCharEntity(9, result);
-				}
-				else if (character == '\'') {
-					queryAddCharEntity(39, result);
-					//result.append("%27");
-				}
-				else if (character == '\\') {
-					queryAddCharEntity(92, result);
-					//result.append("%5C");
-				}
-				else {
-					//the char is not a special one
-					//add it to the result as is
-					result.append(character);
-				}
-				character = iterator.next();
-			}
-		}
-		return result.toString();
-	}
-	/**Converts raw doubles and raw Strings to Int
-	 * @param obj
-	 * @return 0 if not a number
-	 */
-	private static int convertToInt(Object obj){
-		if(obj.getClass().getName().equals("java.lang.Double")){
-			return new Double((double) obj).intValue();
-		}
-		if(obj instanceof String){
-			if(isInteger((String) obj)){
-				return Integer.parseInt((String) obj);
-			}
-		}
-		return 0;
-	}
+
 	private boolean CONNECTED = false;
 	private boolean LOGGEDIN = false;
 	private String clientname;
@@ -192,23 +37,8 @@ public final class VBulletinAPI extends Thread{
 	private String apiClientID;
 	private String secret;
 	private String username;
-	private String password;
+	private String password;//TODO need a more secure storage
 
-	/**
-	 * Returns a String built from the InputStream
-	 * @param inputStream
-	 * @return
-	 * @throws IOException
-	 */
-	private String inputStreamToString(InputStream inputStream) throws IOException {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		byte[] buffer = new byte[1024];
-		int length = 0;
-		while ((length = inputStream.read(buffer)) != -1) {
-			baos.write(buffer, 0, length);
-		}
-		return new String(baos.toByteArray(), Charset.defaultCharset());
-	}
 	/**
 	 * Instantiates a new vBulletin API wrapper. This will initialize the API
 	 * connection as well, with OS name and version pulled from property files
@@ -245,7 +75,7 @@ public final class VBulletinAPI extends Thread{
 	 * Instantiates a new vBulletin API wrapper. This will initialize the API
 	 * connection as well, with OS name and version pulled from property files
 	 * and unique ID generated from the hash code of the system properties.
-	 * Will attempt to login with provided credentals.
+	 * Will attempt to login with provided credentials.
 	 * Use isConnected() and isLoggedin() to verify results.
 	 *
 	 * @param username
@@ -265,8 +95,8 @@ public final class VBulletinAPI extends Thread{
 	 *             whatever reason.
 	 */
 	public VBulletinAPI(String username, String password, String apiURL, String apikey, String clientname,String clientversion){ //throws IOException {
-		this.apiURL = apiURL;
-		this.apikey = apikey;
+		this.setAPIURL(apiURL);
+		this.setAPIkey(apikey);
 		this.clientname = clientname;
 		this.clientversion = clientversion;
 		this.setName("vBulletinAPI");
@@ -297,11 +127,11 @@ public final class VBulletinAPI extends Thread{
 			StringBuffer queryStringBuffer = new StringBuffer("api_m=" + methodname);
 			SortedSet<String> keys = new TreeSet<String>(params.keySet());
 			for (String key : keys) {// ' " \ are unsafe
-				String value = querySafeString(params.get(key));
+				String value = Functions.querySafeString(params.get(key));
 				queryStringBuffer.append("&" + key + "=" + URLEncoder.encode(value, "UTF-8"));
 			}
 			if (sign) {
-				queryStringBuffer.append("&api_sig="+ MD5( (queryStringBuffer.toString() + getAPIAccessToken()+ apiClientID + getSecret() + getAPIkey())).toLowerCase());
+				queryStringBuffer.append("&api_sig="+ Functions.MD5( (queryStringBuffer.toString() + getAPIAccessToken()+ apiClientID + getSecret() + getAPIkey())).toLowerCase());
 				if(DEBUG){System.out.println("encoded: "+queryStringBuffer.toString());}
 			}
 
@@ -325,7 +155,7 @@ public final class VBulletinAPI extends Thread{
 			}
 			finally{
 				if(is != null){
-					String json = inputStreamToString(is);
+					String json = Functions.inputStreamToString(is);
 
 					//need to remove everything before {
 					if(json.contains("{")){
@@ -370,35 +200,55 @@ public final class VBulletinAPI extends Thread{
 	 * @throws APIIOException
 	 * @throws APIIllegalStateException
 	 */
-	private void errorsCommon(String errorMsg) throws InvalidAPISignature, NoPermissionLoggedout, NoPermissionLoggedin, InvalidAccessToken, APISocketTimeoutException, APIIOException, APIIllegalStateException{
-		if(errorMsg.equals("invalid_api_signature")){
-			throw new InvalidAPISignature();
+	protected static void errorsCommon(String errorMsg) throws InvalidAPISignature, NoPermissionLoggedout, NoPermissionLoggedin, InvalidAccessToken, APISocketTimeoutException, APIIOException, APIIllegalStateException{
+		if(errorMsg != null){
+			if(errorMsg.equals("invalid_api_signature")){
+				throw new InvalidAPISignature();
+			}
+			else if(errorMsg.equals("nopermission_loggedout")){
+				throw new NoPermissionLoggedout();
+			}
+			else if(errorMsg.equals("nopermission_loggedin")){
+				throw new NoPermissionLoggedin();
+			}
+			else if(errorMsg.equals("invalid_accesstoken")){
+				throw new InvalidAccessToken();
+			}
+			else if(errorMsg.equals("SocketTimeoutException")){
+				throw new APISocketTimeoutException();
+			}
+			else if(errorMsg.equals("IOException")){
+				throw new APIIOException();
+			}
+			else if(errorMsg.equals("IllegalStateException")){
+				if(DEBUG){System.out.println("ERROR IllegalStateException");}
+				throw new APIIllegalStateException();
+			}
 		}
-		else if(errorMsg.equals("nopermission_loggedout")){
-			throw new NoPermissionLoggedout();
+	}
+	/**Returns forum homepage related information
+	 * @return
+	 * @throws VBulletinAPIException when less common errors occur
+	 */
+	public String forum_Home(int loop) throws VBulletinAPIException{
+		if(isConnected()){
+			//String errorMsg = "";
+			loop++;
+			HashMap<String, String> params = new HashMap<String, String>();
+			params.put("forumid", "293");
+			
+			new Forum().parse(callMethod("forumdisplay", params, true));
+
+			//errorsCommon(errorMsg);
+			return "done";
 		}
-		else if(errorMsg.equals("nopermission_loggedin")){
-			throw new NoPermissionLoggedin();
-		}
-		else if(errorMsg.equals("invalid_accesstoken")){
-			throw new InvalidAccessToken();
-		}
-		else if(errorMsg.equals("SocketTimeoutException")){
-			throw new APISocketTimeoutException();
-		}
-		else if(errorMsg.equals("IOException")){
-			throw new APIIOException();
-		}
-		else if(errorMsg.equals("IllegalStateException")){
-			if(DEBUG){System.out.println("ERROR IllegalStateException");}
-			throw new APIIllegalStateException();
-		}
+		throw new NoConnectionException();
 	}
 	/**
 	 * Attempts to login no more than 3 times
 	 */
 	public boolean forum_Login() throws BadCredentials, VBulletinAPIException{
-		if(IsConnected()){
+		if(isConnected()){
 			String errorMsg = "";
 			for(int i = 0;i < 3;i++){
 				errorMsg = parseResponse(forum_LoginDirect());if(errorMsg == null){errorMsg = "";}
@@ -441,8 +291,8 @@ public final class VBulletinAPI extends Thread{
 	 * @throws BadCredentials
 	 * @throws VBulletinAPIException
 	 */
-	public boolean forum_Logout() throws BadCredentials, VBulletinAPIException{
-		if(IsConnected()){
+	protected boolean forum_Logout() throws BadCredentials, VBulletinAPIException{
+		if(isConnected()){
 			String errorMsg = "";
 			for(int i = 0;i < 3;i++){
 				HashMap<String, String> params = new HashMap<String, String>();
@@ -481,17 +331,17 @@ public final class VBulletinAPI extends Thread{
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
 	private Member forum_ViewMember(String user, int loop) throws NoPermissionLoggedout, VBulletinAPIException{
-		if(IsConnected()){
+		if(isConnected()){
 			Member member = null;
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
 			params.put("username", user);
-			if(loop < 4){//no inifinite loop by user
+			if(loop < 4){//no infinite loop by user
 				try {
-					member = parseViewMember(callMethod("member", params, true));
+					member = new Member().parse(callMethod("member", params, true));
 				} catch (InvalidAccessToken | NoPermissionLoggedout e) {
 					forum_Login();
-					if(IsLoggedin()){
+					if(isLoggedin()){
 						return forum_ViewMember(user, loop);
 					}
 					throw e;
@@ -517,7 +367,7 @@ public final class VBulletinAPI extends Thread{
 	 *
 	 * @return the API client ID
 	 */
-	public String getAPIClientID() {
+	protected String getAPIClientID() {
 		return apiClientID;
 	}
 	/**
@@ -533,7 +383,7 @@ public final class VBulletinAPI extends Thread{
 	 *
 	 * @return the URL
 	 */
-	public String getAPIURL() {
+	protected String getAPIURL() {
 		return apiURL;
 	}
 	/**
@@ -576,9 +426,6 @@ public final class VBulletinAPI extends Thread{
 			apiClientID = String.valueOf(initvalues.get("apiclientid"));
 			//if((String) initvalues.get("secret") != null){secret = (String) initvalues.get("secret");}
 			setSecret((String) initvalues.get("secret"));
-			//Base.Console.debug("apiAccessToken = "+apiAccessToken);
-			//Base.Console.debug("apiClientID = "+apiClientID);
-			//Base.Console.debug("secret = "+secret);
 			return initvalues;
 		}
 		catch(Exception e){
@@ -588,13 +435,13 @@ public final class VBulletinAPI extends Thread{
 	/**
 	 * Returns if connected into vBulletin forum
 	 */
-	public boolean IsConnected(){
+	public synchronized boolean isConnected(){
 		return CONNECTED;
 	}
 	/**Is the username and password set?
 	 * @return
 	 */
-	public boolean IsCredentialsSet(){
+	public synchronized boolean isCredentialsSet(){
 		if(username != null && password != null){
 			if(!username.isEmpty() && !password.isEmpty()){
 				return true;
@@ -605,49 +452,54 @@ public final class VBulletinAPI extends Thread{
 	/**
 	 * Returns if logged into vBulletin forum
 	 */
-	public boolean IsLoggedin(){
+	public synchronized boolean isLoggedin(){
 		return LOGGEDIN;
 	}
+
+	
 	/**Parses response, designed specifically for gathering the list of all messages. Messages only have the header at this point, the actual message is not included
-	 * @param response
+	 * @param response from callMethod
 	 * @return ArrayList<Message>
 	 */
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private ArrayList<Message> parseMessages(LinkedTreeMap<String, Object> response) throws NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		ArrayList<Message> messages = new ArrayList<Message>();
 		if(response != null){
 			if(response.containsKey("response")){
-				if(((LinkedTreeMap)response.get("response")).containsKey("HTML")){
-					LinkedTreeMap HTML = (LinkedTreeMap) ((LinkedTreeMap)response.get("response")).get("HTML");
+				//Need more object Data Type checks
+				LinkedTreeMap<String, Object> response2 = (LinkedTreeMap<String, Object>)response.get("response");
+				if(response2.containsKey("HTML")){
+					LinkedTreeMap<String, Object> HTML = (LinkedTreeMap<String, Object>) response2.get("HTML");
 					if(HTML.containsKey("messagelist_periodgroups")){
 						if(HTML.get("messagelist_periodgroups") instanceof LinkedTreeMap){
-							LinkedTreeMap messageGroup = (LinkedTreeMap) HTML.get("messagelist_periodgroups");
+							LinkedTreeMap<String, Object> messageGroup = (LinkedTreeMap<String, Object>) HTML.get("messagelist_periodgroups");
 							if(messageGroup.containsKey("messagesingroup")){
 								if((double)(messageGroup.get("messagesingroup"))>0){//if there are messages
 									if(messageGroup.containsKey("messagelistbits")){
 										if(messageGroup.get("messagelistbits") instanceof LinkedTreeMap){//single message
 											Message parsedMessage = new Message();
-											LinkedTreeMap message = (LinkedTreeMap) messageGroup.get("messagelistbits");
-											parsedMessage.pmid = (String) ((LinkedTreeMap)message.get("pm")).get("pmid");
-											parsedMessage.sendtime = (String) ((LinkedTreeMap)message.get("pm")).get("sendtime");
-											parsedMessage.statusicon = (String) ((LinkedTreeMap)message.get("pm")).get("statusicon");
-											parsedMessage.title = (String) ((LinkedTreeMap)message.get("pm")).get("title");
+											LinkedTreeMap<String, Object> message = (LinkedTreeMap<String, Object>) messageGroup.get("messagelistbits");
+											LinkedTreeMap<String, Object> pm = (LinkedTreeMap<String, Object>) message.get("messagelistbits");
+											parsedMessage.pmid = Functions.convertToInt(pm.get("pmid"));
+											parsedMessage.sendtime = Functions.convertToString(pm.get("sendtime"));
+											parsedMessage.statusicon = Functions.convertToString(pm.get("statusicon"));
+											parsedMessage.title = Functions.convertToString(pm.get("title"));
 
-											parsedMessage.setUserid((String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("userid"));
-											parsedMessage.username = (String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("username");
+											parsedMessage.userid = Functions.convertToInt( ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("userid"));
+											parsedMessage.username = Functions.convertToString(  ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("username"));
 											messages.add(parsedMessage);
 										}
 										else if(messageGroup.get("messagelistbits") instanceof ArrayList){//multiple messages
-											for(Object objInner : (ArrayList) messageGroup.get("messagelistbits")){
+											for(LinkedTreeMap<String, Object> message : (ArrayList<LinkedTreeMap<String, Object>>) messageGroup.get("messagelistbits")){
 												Message parsedMessage = new Message();
-												LinkedTreeMap message = (LinkedTreeMap) objInner;
-												parsedMessage.pmid = (String) ((LinkedTreeMap)message.get("pm")).get("pmid");
-												parsedMessage.sendtime = (String) ((LinkedTreeMap)message.get("pm")).get("sendtime");
-												parsedMessage.statusicon = (String) ((LinkedTreeMap)message.get("pm")).get("statusicon");
-												parsedMessage.title = (String) ((LinkedTreeMap)message.get("pm")).get("title");
+												LinkedTreeMap<String, Object> pm = (LinkedTreeMap<String, Object>) message.get("messagelistbits");
+												parsedMessage.pmid = Functions.convertToInt(pm.get("pmid"));
+												parsedMessage.sendtime = Functions.convertToString(pm.get("sendtime"));
+												parsedMessage.statusicon = Functions.convertToString(pm.get("statusicon"));
+												parsedMessage.title = Functions.convertToString(pm.get("title"));
 
-												parsedMessage.setUserid((String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("userid"));
-												parsedMessage.username = (String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("username");
+												parsedMessage.userid = Functions.convertToInt( ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("userid"));
+												parsedMessage.username = Functions.convertToString(  ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("username"));
 												messages.add(parsedMessage);
 											}
 										}
@@ -664,27 +516,28 @@ public final class VBulletinAPI extends Thread{
 										if(messageGroup.containsKey("messagelistbits")){
 											if(messageGroup.get("messagelistbits") instanceof LinkedTreeMap){//single message
 												Message parsedMessage = new Message();
-												LinkedTreeMap message = (LinkedTreeMap) messageGroup.get("messagelistbits");
-												parsedMessage.pmid = (String) ((LinkedTreeMap)message.get("pm")).get("pmid");
-												parsedMessage.sendtime = (String) ((LinkedTreeMap)message.get("pm")).get("sendtime");
-												parsedMessage.statusicon = (String) ((LinkedTreeMap)message.get("pm")).get("statusicon");
-												parsedMessage.title = (String) ((LinkedTreeMap)message.get("pm")).get("title");
+												LinkedTreeMap<String, Object> message = (LinkedTreeMap<String, Object>) messageGroup.get("messagelistbits");
+												LinkedTreeMap<String, Object> pm = (LinkedTreeMap<String, Object>) message.get("messagelistbits");
+												parsedMessage.pmid = Functions.convertToInt(pm.get("pmid"));
+												parsedMessage.sendtime = Functions.convertToString(pm.get("sendtime"));
+												parsedMessage.statusicon = Functions.convertToString(pm.get("statusicon"));
+												parsedMessage.title = Functions.convertToString(pm.get("title"));
 
-												parsedMessage.setUserid((String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("userid"));
-												parsedMessage.username = (String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("username");
+												parsedMessage.userid = Functions.convertToInt( ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("userid"));
+												parsedMessage.username = Functions.convertToString(  ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("username"));
 												messages.add(parsedMessage);
 											}
 											else if(messageGroup.get("messagelistbits") instanceof ArrayList){//multiple messages
-												for(Object objInner : (ArrayList) messageGroup.get("messagelistbits")){
+												for(LinkedTreeMap<String, Object> message : (ArrayList<LinkedTreeMap<String, Object>>) messageGroup.get("messagelistbits")){
 													Message parsedMessage = new Message();
-													LinkedTreeMap message = (LinkedTreeMap) objInner;
-													parsedMessage.pmid = (String) ((LinkedTreeMap)message.get("pm")).get("pmid");
-													parsedMessage.sendtime = (String) ((LinkedTreeMap)message.get("pm")).get("sendtime");
-													parsedMessage.statusicon = (String) ((LinkedTreeMap)message.get("pm")).get("statusicon");
-													parsedMessage.title = (String) ((LinkedTreeMap)message.get("pm")).get("title");
+													LinkedTreeMap<String, Object> pm = (LinkedTreeMap<String, Object>) message.get("messagelistbits");
+													parsedMessage.pmid = Functions.convertToInt(pm.get("pmid"));
+													parsedMessage.sendtime = Functions.convertToString(pm.get("sendtime"));
+													parsedMessage.statusicon = Functions.convertToString(pm.get("statusicon"));
+													parsedMessage.title = Functions.convertToString(pm.get("title"));
 
-													parsedMessage.setUserid((String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("userid"));
-													parsedMessage.username = (String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("username");
+													parsedMessage.userid = Functions.convertToInt( ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("userid"));
+													parsedMessage.username = Functions.convertToString(  ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("username"));
 													messages.add(parsedMessage);
 												}
 											}
@@ -695,34 +548,31 @@ public final class VBulletinAPI extends Thread{
 						}
 					}
 				}
-				if(((LinkedTreeMap)response.get("response")).containsKey("errormessage")){
+				if(response2.containsKey("errormessage")){
 					String theError = "";
-					//String errorSecond = "";
-					String className = ((LinkedTreeMap)response.get("response")).get("errormessage").getClass().getName();
-					if(className.equals("java.lang.String")){
-						theError = ((String) ((LinkedTreeMap)response.get("response")).get("errormessage"));
+					if(response2.get("errormessage") instanceof String){
+						theError = (String)response2.get("errormessage");
 						if(theError.equals("redirect_postthanks")){//this is for newthread and newpost
-							if(response.containsKey("show")){
-								if(((LinkedTreeMap)response.get("show")).containsKey("threadid")){
-									theError = (String) ((LinkedTreeMap)response.get("show")).get("threadid");
-									theError += " "+(double) ((LinkedTreeMap)response.get("show")).get("postid");
+							if(response.get("show") instanceof LinkedTreeMap){
+								LinkedTreeMap<String, Object> show = (LinkedTreeMap<String, Object>)response.get("show");
+								if(show.containsKey("threadid")){
+									theError = ""+Functions.convertToInt(show.get("threadid"));
+								}
+								if(show.containsKey("postid")){
+									theError += " "+Functions.convertToInt(show.get("postid"));
 								}
 							}
 						}
 					}
-					else if(className.equals("java.util.ArrayList")){
-						Object[] errors = ((ArrayList) ((LinkedTreeMap)response.get("response")).get("errormessage")).toArray();
+					else if(response2.get("errormessage") instanceof ArrayList){
+						Object[] errors = ((ArrayList<String>) response2.get("errormessage")).toArray();
 						if(errors.length > 0){
 							theError = errors[0].toString();
 						}
-						/*if(errors.length > 1){
-							errorSecond = errors[1].toString();
-						}*/
 					}
-					//parse theError here
 					errorsCommon(theError);
-					System.out.println("responseError  response -> errormessage type unknown: "+className);
-					throw new VBulletinAPIException("vBulletin API Unknown Error - "+className);
+					System.out.println("responseError  response -> errormessage type unknown: "+response2.get("errormessage").getClass().getName());
+					throw new VBulletinAPIException("vBulletin API Unknown Error - "+response2.get("errormessage").getClass().getName());
 				}
 			}
 		}
@@ -832,286 +682,8 @@ public final class VBulletinAPI extends Thread{
 		//Base.Console.debug("SC2Mafia API return error: "+theReturn);
 		return theReturn;
 	}
-	/**Returns a Thread containing all the Posts within(or specified)
-	 * @param response
-	 * @return
-	 * @throws InvalidId ThreadID missing or nonexistent
-	 * @throws NoPermissionLoggedout
-	 * @throws NoPermissionLoggedin
-	 * @throws VBulletinAPIException All generic or unknown errors
-	 */
-	@SuppressWarnings("rawtypes")
-	private ForumThread parseThread(LinkedTreeMap<String, Object> response) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		ForumThread thread = new ForumThread();
-		if(response != null){
-			if(response.containsKey("response")){
-				if(((LinkedTreeMap)response.get("response")).containsKey("totalposts")){
-					thread.totalposts = new Double((double) ((LinkedTreeMap)response.get("response")).get("totalposts")).intValue();
-
-				}
-				if(((LinkedTreeMap)response.get("response")).containsKey("FIRSTPOSTID")){
-					thread.FIRSTPOSTID = convertToInt(((LinkedTreeMap)response.get("response")).get("FIRSTPOSTID"));
-				}
-				if(((LinkedTreeMap)response.get("response")).containsKey("LASTPOSTID")){
-					thread.LASTPOSTID = convertToInt(((LinkedTreeMap)response.get("response")).get("LASTPOSTID"));
-				}
-				if(((LinkedTreeMap)response.get("response")).containsKey("pagenumber")){
-					thread.pagenumber = convertToInt(((LinkedTreeMap)response.get("response")).get("pagenumber"));
-				}
-				if(((LinkedTreeMap)response.get("response")).containsKey("perpage")){
-					thread.perpage = convertToInt(((LinkedTreeMap)response.get("response")).get("perpage"));
-				}
-				if(((LinkedTreeMap)response.get("response")).containsKey("postbits")){
-					if(((LinkedTreeMap)response.get("response")).get("postbits") instanceof ArrayList){//multiple posts
-						@SuppressWarnings("unchecked")
-						ArrayList<LinkedTreeMap> postbits = (ArrayList<LinkedTreeMap>) ((LinkedTreeMap)response.get("response")).get("postbits");
-						for(LinkedTreeMap postHolder : postbits){
-							if(postHolder.containsKey("post")){
-								Post post = new Post();
-								LinkedTreeMap postPost = (LinkedTreeMap) postHolder.get("post");
-								if(postPost.containsKey("postid")){
-									post.postid = convertToInt(postPost.get("postid"));
-								}
-								if(postPost.containsKey("posttime")){
-									if(isInteger((String) postPost.get("posttime"))){
-										post.posttime = Long.parseLong((String) postPost.get("posttime"));
-									}
-								}
-								if(postPost.containsKey("threadid")){
-									post.threadid = convertToInt(postPost.get("threadid"));
-								}
-								if(postPost.containsKey("userid")){
-									post.userid = convertToInt(postPost.get("userid"));
-								}
-								if(postPost.containsKey("username")){
-									post.username = (String) postPost.get("username");
-								}
-								if(postPost.containsKey("avatarurl")){
-									post.avatarurl = (String) postPost.get("avatarurl");
-								}
-								if(postPost.containsKey("usertitle")){
-									post.usertitle = (String) postPost.get("usertitle");
-								}
-								if(postPost.containsKey("joindate")){
-									if(isInteger((String) postPost.get("joindate"))){
-										post.joindate = Long.parseLong((String) postPost.get("joindate"));
-									}
-								}
-								if(postPost.containsKey("title")){
-									post.title = (String) postPost.get("title");
-								}
-								if(postPost.containsKey("isfirstshown")){
-									if(convertToInt(postPost.get("isfirstshown")) == 1){
-										post.isfirstshown = true;
-									}
-									else{post.isfirstshown = false;}
-								}
-								if(postPost.containsKey("islastshown")){
-									if(convertToInt(postPost.get("islastshown")) == 1){
-										post.islastshown = true;
-									}
-									else{post.islastshown = false;}
-								}
-								if(postPost.containsKey("message")){
-									post.message = (String) postPost.get("message");
-								}
-								if(postPost.containsKey("message_plain")){
-									post.message_plain = (String) postPost.get("message_plain");
-								}
-								if(postPost.containsKey("message_bbcode")){
-									post.message_bbcode = (String) postPost.get("message_bbcode");
-								}
-								thread.posts.add(post);
-							}
-						}
-					}
-					else if(((LinkedTreeMap)response.get("response")).get("postbits") instanceof LinkedTreeMap){//single post
-						System.out.println("postbits is map");
-						LinkedTreeMap postHolder = (LinkedTreeMap) ((LinkedTreeMap)response.get("response")).get("postbits");
-						if(postHolder.containsKey("post")){
-							Post post = new Post();
-							LinkedTreeMap postPost = (LinkedTreeMap) postHolder.get("post");
-							if(postPost.containsKey("postid")){
-								post.postid = convertToInt(postPost.get("postid"));
-							}
-							if(postPost.containsKey("posttime")){
-								if(isInteger((String) postPost.get("posttime"))){
-									post.posttime = Long.parseLong((String) postPost.get("posttime"));
-								}
-							}
-							if(postPost.containsKey("threadid")){
-								post.threadid = convertToInt(postPost.get("threadid"));
-							}
-							if(postPost.containsKey("userid")){
-								post.userid = convertToInt(postPost.get("userid"));
-							}
-							if(postPost.containsKey("username")){
-								post.username = (String) postPost.get("username");
-							}
-							if(postPost.containsKey("avatarurl")){
-								post.avatarurl = (String) postPost.get("avatarurl");
-							}
-							if(postPost.containsKey("usertitle")){
-								post.usertitle = (String) postPost.get("usertitle");
-							}
-							if(postPost.containsKey("joindate")){
-								if(isInteger((String) postPost.get("joindate"))){
-									post.joindate = Long.parseLong((String) postPost.get("joindate"));
-								}
-							}
-							if(postPost.containsKey("title")){
-								post.title = (String) postPost.get("title");
-							}
-							if(postPost.containsKey("isfirstshown")){
-								if(convertToInt(postPost.get("isfirstshown")) == 1){
-									post.isfirstshown = true;
-								}
-								else{post.isfirstshown = false;}
-							}
-							if(postPost.containsKey("islastshown")){
-								if(convertToInt(postPost.get("islastshown")) == 1){
-									post.islastshown = true;
-								}
-								else{post.islastshown = false;}
-							}
-							if(postPost.containsKey("message")){
-								post.message = (String) postPost.get("message");
-							}
-							if(postPost.containsKey("message_plain")){
-								post.message_plain = (String) postPost.get("message_plain");
-							}
-							if(postPost.containsKey("message_bbcode")){
-								post.message_bbcode = (String) postPost.get("message_bbcode");
-							}
-							thread.posts.add(post);
-						}
-					}
-				}
-				if(((LinkedTreeMap)response.get("response")).containsKey("errormessage")){
-					String theError = "";
-					String errorSecond = "";
-					String className = ((LinkedTreeMap)response.get("response")).get("errormessage").getClass().getName();
-					if(className.equals("java.lang.String")){
-						theError = ((String) ((LinkedTreeMap)response.get("response")).get("errormessage"));
-						if(theError.equals("redirect_postthanks")){//this is for newthread and newpost
-							if(response.containsKey("show")){
-								if(((LinkedTreeMap)response.get("show")).containsKey("threadid")){
-									theError = ""+convertToInt(((LinkedTreeMap)response.get("show")).get("threadid"));
-									theError += " "+convertToInt(((LinkedTreeMap)response.get("show")).get("postid"));
-								}
-							}
-						}
-					}
-					else if(className.equals("java.util.ArrayList")){
-						Object[] errors = ((ArrayList) ((LinkedTreeMap)response.get("response")).get("errormessage")).toArray();
-						if(errors.length > 0){
-							theError = errors[0].toString();
-						}
-						if(errors.length > 1){
-							errorSecond = errors[1].toString();
-						}
-					}
-					//parse theError here
-					if(theError.equals("noid")){
-						System.out.println("Thread Parse InvalidId "+errorSecond);
-						throw new InvalidId(errorSecond);
-					}
-					errorsCommon(theError);
-					System.out.println("responseError  response -> errormessage type unknown: "+className);
-					throw new VBulletinAPIException("vBulletin API Unknown Error - "+className);
-				}
-			}
-		}
-		if(DEBUG){
-			System.out.println("thread all ->");
-			System.out.println(response.toString());
-		}
-		return thread;
-	}
-	/** Parses json from viewMember into
-	 * username
-	 * forumid
-	 * forumjoindate
-	 * avatarurl
-	 * @param response from viewMember (callMethod)
-	 * @return HashMap<String, String>
-	 * @throws APIIllegalStateException
-	 * @throws APIIOException
-	 * @throws APISocketTimeoutException
-	 * @throws InvalidAccessToken
-	 * @throws NoPermissionLoggedin
-	 * @throws NoPermissionLoggedout
-	 * @throws InvalidAPISignature
-	 */
-	@SuppressWarnings("rawtypes")
-	private Member parseViewMember(LinkedTreeMap<String, Object> response) throws NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		Member theReturn = new Member();
-		if(response != null){
-			String className = null;
-			if(response.containsKey("response")){
-				//response -> prepared
-				if(((LinkedTreeMap)response.get("response")).containsKey("prepared")){
-					className = ((LinkedTreeMap)response.get("response")).get("prepared").getClass().getName();
-					if(className.equals("com.google.gson.internal.LinkedTreeMap")){
-						LinkedTreeMap prepared = (LinkedTreeMap) ((LinkedTreeMap)response.get("response")).get("prepared");
-						if(prepared.containsKey("username")){
-							className = prepared.get("username").getClass().getName();
-							if(className.equals("java.lang.String")){
-								theReturn.username = (String) prepared.get("username");
-							}
-						}
-						if(prepared.containsKey("userid")){
-							className = prepared.get("userid").getClass().getName();
-							if(className.equals("java.lang.String")){
-								theReturn.userid = (String) prepared.get("userid");
-							}
-						}
-						if(prepared.containsKey("public String username;")){
-							className = prepared.get("joindate").getClass().getName();
-							if(className.equals("java.lang.String")){
-								theReturn.joindate = (String) prepared.get("joindate");
-							}
-						}
-						if(prepared.containsKey("avatarurl")){
-							className = prepared.get("avatarurl").getClass().getName();
-							if(className.equals("java.lang.String")){
-								theReturn.avatarurl = (String) prepared.get("avatarurl");
-							}
-						}
-					}
-				}
-				if(((LinkedTreeMap)response.get("response")).containsKey("errormessage")){
-					String theError = "";
-					className = ((LinkedTreeMap)response.get("response")).get("errormessage").getClass().getName();
-					if(className.equals("java.lang.String")){
-						theError = ((String) ((LinkedTreeMap)response.get("response")).get("errormessage"));
-						if(theError.equals("redirect_postthanks")){//this is for newthread and newpost
-							if(response.containsKey("show")){
-								if(((LinkedTreeMap)response.get("show")).containsKey("threadid")){
-									theError = ""+convertToInt(((LinkedTreeMap)response.get("show")).get("threadid"));
-									theError += " "+convertToInt(((LinkedTreeMap)response.get("show")).get("postid"));
-								}
-							}
-						}
-					}
-					else if(className.equals("java.util.ArrayList")){
-						Object[] errors = ((ArrayList) ((LinkedTreeMap)response.get("response")).get("errormessage")).toArray();
-						if(errors.length > 0){
-							theError = errors[0].toString();
-						}
-					}
-					errorsCommon(theError);
-					System.out.println("responseError  response -> errormessage type unknown: "+className);
-					throw new VBulletinAPIException("vBulletin API Unknown Error - "+className);
-				}
-			}
-		}
-		if(DEBUG){
-			System.out.println("member all ->");
-			System.out.println(response.toString());
-		}
-		return theReturn;
-	}
+	
+	
 	/**Attempts to empty the primary PM Inbox
 	 * @param folderid which folder to empty
 	 * @return true on success
@@ -1157,7 +729,7 @@ public final class VBulletinAPI extends Thread{
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
 	private boolean pm_EmptyInbox(String folderid, String dateToDelete, int loop) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		if(IsConnected()){
+		if(isConnected()){
 			String errorMsg = null;
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();//150885
@@ -1172,7 +744,7 @@ public final class VBulletinAPI extends Thread{
 					}
 					else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
 						forum_Login();
-						if(IsLoggedin()){
+						if(isLoggedin()){
 							return pm_EmptyInbox(folderid, dateToDelete, loop);
 						}
 					}
@@ -1203,7 +775,7 @@ public final class VBulletinAPI extends Thread{
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
 	private ArrayList<Message> pm_ListPMs(int loop) throws NoPermissionLoggedout, VBulletinAPIException{
-		if(IsConnected()){
+		if(isConnected()){
 			ArrayList<Message> msgList = new ArrayList<Message>();
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
@@ -1215,7 +787,7 @@ public final class VBulletinAPI extends Thread{
 					}
 				} catch (InvalidAccessToken | NoPermissionLoggedout e) {
 					forum_Login();
-					if(IsLoggedin()){
+					if(isLoggedin()){
 						return pm_ListPMs(loop);
 					}
 					throw e;
@@ -1273,7 +845,7 @@ public final class VBulletinAPI extends Thread{
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
 	private boolean pm_SendNew(String user,String title,String message, boolean signature, int loop) throws PMRecipTurnedOff, PMRecipientsNotFound, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		if(IsConnected()){//TODO add Exception for flood checks
+		if(isConnected()){//TODO add Exception for flood checks
 			loop++;
 			String errorMsg;
 			HashMap<String, String> params = new HashMap<String, String>();
@@ -1289,7 +861,7 @@ public final class VBulletinAPI extends Thread{
 					}
 					else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")||errorMsg.equals("invalid_api_signature")){
 						forum_Login();
-						if(IsLoggedin()){
+						if(isLoggedin()){
 							return pm_SendNew(user, title, message, signature,loop);
 						}
 						//return errorMsg;
@@ -1317,6 +889,16 @@ public final class VBulletinAPI extends Thread{
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
+	public String pm_ViewPM(int pmId) throws InvalidId, NoPermissionLoggedout, VBulletinAPIException{
+		return pm_ViewPM(pmId+"", 0);
+	}
+	/**Grabs the message from the PM specified by the pmID
+	 * @param pmId
+	 * @return message text as String
+	 * @throws InvalidId on non existent Private Message
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws VBulletinAPIException when less common errors occur
+	 */
 	public String pm_ViewPM(String pmId) throws InvalidId, NoPermissionLoggedout, VBulletinAPIException{
 		return pm_ViewPM(pmId, 0);
 	}
@@ -1329,7 +911,7 @@ public final class VBulletinAPI extends Thread{
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
 	private String pm_ViewPM(String pmId, int loop) throws InvalidId, NoPermissionLoggedout, VBulletinAPIException{
-		if(IsConnected()){
+		if(isConnected()){
 			String errorMsg = null;
 			loop++;
 			if(pmId != null){
@@ -1340,7 +922,7 @@ public final class VBulletinAPI extends Thread{
 					if(errorMsg != null){
 						if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
 							forum_Login();
-							if(IsLoggedin()){
+							if(isLoggedin()){
 								return pm_ViewPM(pmId, loop);
 							}
 						}
@@ -1415,7 +997,7 @@ public final class VBulletinAPI extends Thread{
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
 	private boolean post_Edit(String postid,String message, boolean signature, int loop) throws ThreadClosed, InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		if(IsConnected()){
+		if(isConnected()){
 			String errorMsg;
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
@@ -1430,7 +1012,7 @@ public final class VBulletinAPI extends Thread{
 					}
 					else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
 						forum_Login();
-						if(IsLoggedin()){
+						if(isLoggedin()){
 							return post_Edit(postid, message, signature, loop);
 						}
 					}
@@ -1503,7 +1085,7 @@ public final class VBulletinAPI extends Thread{
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
 	private int[] post_New(String threadid,String message, boolean signature, int loop) throws ThreadClosed, InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		if(IsConnected()){
+		if(isConnected()){
 			loop++;
 			String errorMsg;
 			HashMap<String, String> params = new HashMap<String, String>();
@@ -1513,15 +1095,15 @@ public final class VBulletinAPI extends Thread{
 			errorMsg = parseResponse(callMethod("newreply_postreply", params, true));
 			if(loop < 4){
 				if(errorMsg != null){
-					if(isInteger(errorMsg.substring(0, 1))){//success
+					if(Functions.isInteger(errorMsg.substring(0, 1))){//success
 						if(errorMsg.contains(" ")){
 							String[] ids = errorMsg.split(" ");
 							ids[1] = ids[1].substring(0, ids[1].length() - 2);
 							int[] theReturn = new int[2];
-							if(isInteger(ids[0])){
+							if(Functions.isInteger(ids[0])){
 								theReturn[0] = (Integer.parseInt(ids[0]));
 							}
-							if(isInteger(ids[1])){
+							if(Functions.isInteger(ids[1])){
 								theReturn[1] = (Integer.parseInt(ids[1]));
 							}
 							return theReturn;
@@ -1529,7 +1111,7 @@ public final class VBulletinAPI extends Thread{
 					}
 					else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
 						forum_Login();
-						if(IsConnected()){
+						if(isConnected()){
 							return post_New(threadid, message, signature, loop);
 						}
 					}
@@ -1556,7 +1138,7 @@ public final class VBulletinAPI extends Thread{
 		if((parseResponse(init(clientname, clientversion, props.getProperty("os.name"),props.getProperty("os.version"),Integer.toString(props.hashCode()),false))) == null){
 			//Base.Console.config("SC2Mafia Forum API connected.");
 			setConnected(true);
-			if(IsCredentialsSet()){//only try to login if the user/pass is set
+			if(isCredentialsSet()){//only try to login if the user/pass is set
 				try {
 					forum_Login();//attempt to login
 				}catch (VBulletinAPIException e) {e.printStackTrace();}
@@ -1573,7 +1155,7 @@ public final class VBulletinAPI extends Thread{
 	 * @param apiAccessToken
 	 *            the new API access token
 	 */
-	private void setAPIAccessToken(String apiAccessToken) {
+	private synchronized void setAPIAccessToken(String apiAccessToken) {
 		this.apiAccessToken = apiAccessToken;
 	}
 	/**
@@ -1583,7 +1165,7 @@ public final class VBulletinAPI extends Thread{
 	 * @param apiClientID
 	 *            the new API client ID
 	 */
-	public void setAPIClientID(String apiClientID) {
+	protected synchronized void setAPIClientID(String apiClientID) {
 		this.apiClientID = apiClientID;
 	}
 	/**
@@ -1592,7 +1174,7 @@ public final class VBulletinAPI extends Thread{
 	 * @param apikey
 	 *            the new API key
 	 */
-	public void setAPIkey(String apikey) {
+	public synchronized void setAPIkey(String apikey) {
 		this.apikey = apikey;
 	}
 	/**
@@ -1601,25 +1183,25 @@ public final class VBulletinAPI extends Thread{
 	 * @param apiURL
 	 *            the new URL
 	 */
-	public void setAPIURL(String apiURL) {
+	public synchronized void setAPIURL(String apiURL) {
 		this.apiURL = apiURL;
 	}
 	/**
 	 * Sets if the API successfully connected to the Forum
 	 */
-	private void setConnected(boolean arg){
+	private synchronized void setConnected(boolean arg){
 		this.CONNECTED = arg;
 	}
 	/**
 	 * Sets if the API successfully logged into the Forum
 	 */
-	private void setLoggedin(boolean arg){
+	private synchronized void setLoggedin(boolean arg){
 		this.LOGGEDIN = arg;
 	}
 	/**Sets the password to login
 	 * @param pass
 	 */
-	public void setPassword(String pass) {
+	public synchronized void setPassword(String pass) {
 		this.password = pass;
 	}
 	/**
@@ -1629,13 +1211,13 @@ public final class VBulletinAPI extends Thread{
 	 * @param secret
 	 *            the new secret value
 	 */
-	private void setSecret(String secret) {
+	private synchronized void setSecret(String secret) {
 		this.secret = secret;
 	}
 	/**Sets the username to login
 	 * @param user
 	 */
-	public void setUsername(String user) {
+	public synchronized void setUsername(String user) {
 		this.username = user;
 	}
 	/**Attempts to close a Thread in the forum
@@ -1670,7 +1252,7 @@ public final class VBulletinAPI extends Thread{
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
 	private boolean thread_Close(String threadid, int loop) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		if(IsConnected()){
+		if(isConnected()){
 			String errorMsg = null;
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
@@ -1684,7 +1266,7 @@ public final class VBulletinAPI extends Thread{
 						}
 						else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
 							forum_Login();
-							if(IsLoggedin()){
+							if(isLoggedin()){
 								return thread_Close(threadid, loop);
 							}
 						}
@@ -1734,7 +1316,7 @@ public final class VBulletinAPI extends Thread{
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
 	private boolean thread_Delete(String threadid, int loop) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		if(IsConnected()){
+		if(isConnected()){
 			String errorMsg = null;
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
@@ -1748,7 +1330,7 @@ public final class VBulletinAPI extends Thread{
 						}
 						else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
 							forum_Login();
-							if(IsLoggedin()){
+							if(isLoggedin()){
 								return thread_Delete(threadid, loop);
 							}
 						}
@@ -1820,7 +1402,7 @@ public final class VBulletinAPI extends Thread{
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
 	private int[] thread_New(String forumid,String subject,String message, boolean signature, int loop) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		if(IsConnected()){
+		if(isConnected()){
 			String errorMsg = null;
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
@@ -1829,18 +1411,18 @@ public final class VBulletinAPI extends Thread{
 			params.put("message", message);
 			if(signature){params.put("signature", "1");}else{params.put("signature", "0");}
 			errorMsg = parseResponse(callMethod("newthread_postthread", params, true));
-			if(loop < 4){//no inifinite loop by user
+			if(loop < 4){//no infinite loop by user
 				if(errorMsg != null){
 					if(errorMsg.length() > 0){
-						if(isInteger(errorMsg.substring(0, 1))){//success
+						if(Functions.isInteger(errorMsg.substring(0, 1))){//success
 							if(errorMsg.contains(" ")){
 								String[] ids = errorMsg.split(" ");
 								ids[1] = ids[1].substring(0, ids[1].length() - 2);
 								int[] theReturn = new int[2];
-								if(isInteger(ids[0])){
+								if(Functions.isInteger(ids[0])){
 									theReturn[0] = (Integer.parseInt(ids[0]));
 								}
-								if(isInteger(ids[1])){
+								if(Functions.isInteger(ids[1])){
 									theReturn[1] = (Integer.parseInt(ids[1]));
 								}
 								return theReturn;
@@ -1848,7 +1430,7 @@ public final class VBulletinAPI extends Thread{
 						}
 						else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
 							forum_Login();
-							if(IsLoggedin()){
+							if(isLoggedin()){
 								return thread_New(forumid, subject, message, signature, loop);
 							}
 						}
@@ -1898,13 +1480,13 @@ public final class VBulletinAPI extends Thread{
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
 	private boolean thread_Open(String threadid, int loop) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		if(IsConnected()){
+		if(isConnected()){
 			String errorMsg = null;
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
 			params.put("threadid", threadid);
 			errorMsg = parseResponse(callMethod("inlinemod_open", params, true));
-			if(loop < 4){//no inifinite loop by user
+			if(loop < 4){//no infinite loop by user
 				if(errorMsg != null){
 					if(errorMsg.length() > 0){
 						if(errorMsg.equals("something...need success")){//success//TODO need the success result....
@@ -1912,7 +1494,7 @@ public final class VBulletinAPI extends Thread{
 						}
 						else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
 							forum_Login();
-							if(IsLoggedin()){
+							if(isLoggedin()){
 								return thread_Open(threadid, loop);
 							}
 						}
@@ -1980,7 +1562,7 @@ public final class VBulletinAPI extends Thread{
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
 	private ForumThread thread_View(String threadid, String page, String perpage, String postid, int loop) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		if(IsConnected()){
+		if(isConnected()){
 			ForumThread thread = null;
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
@@ -1990,16 +1572,16 @@ public final class VBulletinAPI extends Thread{
 			if(perpage != null){params.put("perpage", perpage);}
 			if(loop < 4){//no infinite loop by user
 				try {
-					thread = parseThread(callMethod("showthread", params, true));
+					thread = new ForumThread().parse(callMethod("showthread", params, true));
 				} catch (InvalidAccessToken e) {
 					forum_Login();
-					if(IsLoggedin()){
+					if(isLoggedin()){
 						return thread_View(threadid, page, perpage, postid, loop);
 					}
 					throw e;
 				} catch (NoPermissionLoggedout e) {
 					forum_Login();
-					if(IsLoggedin()){
+					if(isLoggedin()){
 						return thread_View(threadid, page, perpage, postid, loop);
 					}
 					throw e;
@@ -2008,7 +1590,7 @@ public final class VBulletinAPI extends Thread{
 				}
 				return thread;
 			}
-			parseThread(callMethod("showthread", params, true));
+			return new ForumThread().parse(callMethod("showthread", params, true));
 		}
 		throw new NoConnectionException();
 	}
@@ -2024,12 +1606,12 @@ public final class VBulletinAPI extends Thread{
 		boolean success = false;
 		ForumThread thread = null;
 		thread = thread_View(threadid, 1, 1);//just the first post
-		success = true;
-		if(success){
+		success = true;//TODO what the heck was the point of these if checks?!?!?!
+		if(success){//TODO need to check thread
 			success = false;
 			thread = thread_View(threadid, thread.totalposts, 1);
 			success = true;
-			if(success){
+			if(success){//TODO need to check thread
 				for(Post post : thread.posts){
 					if(post.islastshown){
 						return post;
@@ -2056,6 +1638,6 @@ public final class VBulletinAPI extends Thread{
 			}
 		}
 		return null;
-	}
-
+	}	
+	
 }
