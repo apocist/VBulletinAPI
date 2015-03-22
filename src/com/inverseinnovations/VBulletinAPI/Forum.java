@@ -282,7 +282,6 @@ public class Forum{
 				}
 				//forumbits []
 				if(response2.containsKey("forumbits")){
-					System.out.println("forumbits is "+response2.get("forumbits").getClass().getName());
 					if(response2.get("forumbits") instanceof ArrayList){//multiple posts
 						@SuppressWarnings("unchecked")
 						ArrayList<LinkedTreeMap<String, Object>> forumbits = (ArrayList<LinkedTreeMap<String, Object>>) response2.get("forumbits");
