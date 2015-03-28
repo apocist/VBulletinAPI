@@ -67,7 +67,7 @@ class Functions {
 		boolean retur = false;
 		if(object instanceof String){
 			object = ((String) object).toLowerCase();
-			if(((String)object).equals("true") || ((String)object).equals("1")){
+			if(((String)object).equals("true") || ((String)object).equals("1") || ((String)object).equals("1.0")){
 				retur = true;
 			}
 		}

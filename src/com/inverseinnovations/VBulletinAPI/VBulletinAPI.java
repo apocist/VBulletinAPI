@@ -1324,7 +1324,18 @@ public final class VBulletinAPI extends Thread{
 		this.username = user;
 	}
 	/**Attempts to close a Thread in the forum
-	 * @param threadid
+	 * @param thread Thread to close
+	 * @return true on success
+	 * @throws InvalidId on non existent Thread
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to close own or other's threads
+	 * @throws VBulletinAPIException when less common errors occur
+	 */
+	public boolean threadClose(ForumThread thread) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		return threadClose(""+thread.getThreadId());
+	}
+	/**Attempts to close a Thread in the forum
+	 * @param threadid Id of Thread to close
 	 * @return true on success
 	 * @throws InvalidId on non existent Thread
 	 * @throws NoPermissionLoggedout when logged out
@@ -1335,7 +1346,7 @@ public final class VBulletinAPI extends Thread{
 		return threadClose(""+threadid);
 	}
 	/**Attempts to close a Thread in the forum
-	 * @param threadid
+	 * @param threadid Id of Thread to close
 	 * @return true on success
 	 * @throws InvalidId on non existent Thread
 	 * @throws NoPermissionLoggedout when logged out
@@ -1346,7 +1357,7 @@ public final class VBulletinAPI extends Thread{
 		return threadClose(threadid, 0);
 	}
 	/**Attempts to close a Thread in the forum
-	 * @param threadid
+	 * @param threadid Id of Thread to close
 	 * @param loop
 	 * @return true on success
 	 * @throws InvalidId on non existent Thread
@@ -1388,7 +1399,18 @@ public final class VBulletinAPI extends Thread{
 		throw new NoConnectionException();
 	}
 	/**Attempts to delete a Thread in the forum
-	 * @param threadid
+	 * @param thread Thread to delete
+	 * @return true on success
+	 * @throws InvalidId on non existent Thread
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to delete own or other threads
+	 * @throws VBulletinAPIException when less common errors occur
+	 */
+	public boolean threadDelete(ForumThread thread) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		return threadDelete(""+thread.getThreadId());
+	}
+	/**Attempts to delete a Thread in the forum
+	 * @param threadid Id of Thread to delete
 	 * @return true on success
 	 * @throws InvalidId on non existent Thread
 	 * @throws NoPermissionLoggedout when logged out
@@ -1399,7 +1421,7 @@ public final class VBulletinAPI extends Thread{
 		return threadDelete(""+threadid);
 	}
 	/**Attempts to delete a Thread in the forum
-	 * @param threadid
+	 * @param threadid Id of Thread to delete
 	 * @return true on success
 	 * @throws InvalidId on non existent Thread
 	 * @throws NoPermissionLoggedout when logged out
@@ -1410,7 +1432,7 @@ public final class VBulletinAPI extends Thread{
 		return threadDelete(threadid, 0);
 	}
 	/**Attempts to delete a Thread in the forum
-	 * @param threadid
+	 * @param threadid Id of Thread to delete
 	 * @param loop how many iterations it went through
 	 * @return true on success
 	 * @throws InvalidId on non existent Thread
@@ -1452,51 +1474,78 @@ public final class VBulletinAPI extends Thread{
 		throw new NoConnectionException();
 	}
 	/**Attempts to post a new Thread in the forum, returns the posted Thread id and Post id for later use. Does not include the user's signature.
-	 * @param forumid
-	 * @param subject
-	 * @param message
+	 * @param forum Forum to make the new Thread in
+	 * @param subject The subject of the Thread/Post
+	 * @param message The content of the first Post in the Thread
 	 * @return int[0] = threadid int[1] = postid
 	 * @throws InvalidId on non existent Forum
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to create threads in the forum
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public int[] threadNew(int forumid,String subject,String message) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+	public int[] threadNew(Forum forum, String subject, String message) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		return threadNew(""+forum.getForumId(),subject,message, false);
+	}
+	/**Attempts to post a new Thread in the forum, returns the posted Thread id and Post id for later use. Does not include the user's signature.
+	 * @param forumid Id of Forum to make the new Thread in
+	 * @param subject The subject of the Thread/Post
+	 * @param message The content of the first Post in the Thread
+	 * @return int[0] = threadid int[1] = postid
+	 * @throws InvalidId on non existent Forum
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to create threads in the forum
+	 * @throws VBulletinAPIException when less common errors occur
+	 */
+	public int[] threadNew(int forumid, String subject, String message) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return threadNew(""+forumid,subject,message, false);
 	}
 	/**Attempts to post a new Thread in the forum, returns the posted Thread id and Post id for later use.
-	 * @param forumid
-	 * @param subject
-	 * @param message
-	 * @param signature post signature
+	 * @param forum Forum to make the new Thread in
+	 * @param subject The subject of the Thread/Post
+	 * @param message The content of the first Post in the Thread
+	 * @param signature If you should display the user's signature
 	 * @return int[0] = threadid int[1] = postid
 	 * @throws InvalidId on non existent Forum
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to create threads in the forum
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public int[] threadNew(int forumid,String subject,String message, boolean signature) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+	public int[] threadNew(Forum forum, String subject, String message, boolean signature) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		return threadNew(""+forum.getForumId(),subject,message, signature);
+	}
+	/**Attempts to post a new Thread in the forum, returns the posted Thread id and Post id for later use.
+	 * @param forumid Id of Forum to make the new Thread in
+	 * @param subject The subject of the Thread/Post
+	 * @param message The content of the first Post in the Thread
+	 * @param signature If you should display the user's signature
+	 * @return int[0] = threadid int[1] = postid
+	 * @throws InvalidId on non existent Forum
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to create threads in the forum
+	 * @throws VBulletinAPIException when less common errors occur
+	 */
+	public int[] threadNew(int forumid, String subject, String message, boolean signature) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return threadNew(""+forumid,subject,message, signature);
 	}
 	/**Attempts to post a new Thread in the forum, returns the posted Thread id and Post id for later use.
-	 * @param forumid
-	 * @param subject
-	 * @param message
-	 * @param signature post signature
+	 * @param forumid Id of Forum to make the new Thread in
+	 * @param subject The subject of the Thread/Post
+	 * @param message The content of the first Post in the Thread
+	 * @param signature If you should display the user's signature
 	 * @return int[0] = threadid int[1] = postid
 	 * @throws InvalidId on non existent Forum
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws NoPermissionLoggedin when account does not have permission to create threads in the forum
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public int[] threadNew(String forumid,String subject,String message, boolean signature) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+	public int[] threadNew(String forumid, String subject, String message, boolean signature) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return threadNew(forumid,subject,message, signature, 0);
 	}
 	/**Attempts to post a new Thread in the forum, returns the posted Thread id and Post id for later use.
-	 * @param forumid
-	 * @param subject
-	 * @param message
-	 * @param signature post signature
+	 * @param forumid Id of Forum to make the new Thread in
+	 * @param subject The subject of the Thread/Post
+	 * @param message The content of the first Post in the Thread
+	 * @param signature If you should display the user's signature
 	 * @param loop how many iterations it went through
 	 * @return int[0] = threadid / int[1] = postid
 	 * @throws InvalidId on non existent Forum
@@ -1504,7 +1553,7 @@ public final class VBulletinAPI extends Thread{
 	 * @throws NoPermissionLoggedin when account does not have permission to create threads in the forum
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	private int[] threadNew(String forumid,String subject,String message, boolean signature, int loop) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+	private int[] threadNew(String forumid, String subject, String message, boolean signature, int loop) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		if(isConnected()){
 			String errorMsg = null;
 			loop++;
@@ -1552,7 +1601,18 @@ public final class VBulletinAPI extends Thread{
 		throw new NoConnectionException();
 	}
 	/**Attempts to open a Thread in the forum
-	 * @param threadid
+	 * @param thread Thread to open
+	 * @return true on success
+	 * @throws InvalidId on non existent Thread
+	 * @throws NoPermissionLoggedout when logged out
+	 * @throws NoPermissionLoggedin when account does not have permission to open own or other threads
+	 * @throws VBulletinAPIException when less common errors occur
+	 */
+	public boolean threadOpen(ForumThread thread) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		return threadOpen(""+thread.getThreadId());
+	}
+	/**Attempts to open a Thread in the forum
+	 * @param threadid ID of Thread to open
 	 * @return true on success
 	 * @throws InvalidId on non existent Thread
 	 * @throws NoPermissionLoggedout when logged out
@@ -1563,7 +1623,7 @@ public final class VBulletinAPI extends Thread{
 		return threadOpen(""+threadid);
 	}
 	/**Attempts to open a Thread in the forum
-	 * @param threadid
+	 * @param threadid ID of Thread to open
 	 * @return true on success
 	 * @throws InvalidId on non existent Thread
 	 * @throws NoPermissionLoggedout when logged out
@@ -1574,7 +1634,7 @@ public final class VBulletinAPI extends Thread{
 		return threadOpen(threadid, 0);
 	}
 	/**Attempts to open a Thread in the forum
-	 * @param threadid
+	 * @param threadid ID of Thread to open
 	 * @param loop how many iterations it went through
 	 * @return true on success
 	 * @throws InvalidId on non existent Thread
@@ -1616,7 +1676,18 @@ public final class VBulletinAPI extends Thread{
 		throw new NoConnectionException();
 	}
 	/**Attempts to view a thread and all the posts of page 1. Number of posts per page varies on the account settings.
-	 * @param threadid the thread to view
+	 * @param thread Thread to view
+	 * @return
+	 * @throws InvalidId Thread does no exist or left blank
+	 * @throws NoPermissionLoggedout when logged out and guest do not have viewing rights
+	 * @throws NoPermissionLoggedin when account does not have permission to view this thread
+	 * @throws VBulletinAPIException when less common errors occur
+	 */
+	public ForumThread threadView(ForumThread thread) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		return threadView(""+thread.getThreadId(), null, null);
+	}
+	/**Attempts to view a thread and all the posts of page 1. Number of posts per page varies on the account settings.
+	 * @param threadid Id of Thread to view
 	 * @return
 	 * @throws InvalidId Thread does no exist or left blank
 	 * @throws NoPermissionLoggedout when logged out and guest do not have viewing rights
@@ -1627,9 +1698,22 @@ public final class VBulletinAPI extends Thread{
 		return threadView(""+threadid, null, null);
 	}
 	/**Attempts to view a thread and all the posts of which page the postid is specified is on.
-	 * @param threadid the thread to view
-	 * @param page determines which page to view.
-	 * @param perpage determines how many posts to view per page(alters the results of the page parameter)
+	 * @param thread Thread to view
+	 * @param page Page number to view
+	 * @param perpage Number of Posts to view per page(alters the results of the page parameter)
+	 * @return
+	 * @throws InvalidId Thread does no exist or left blank
+	 * @throws NoPermissionLoggedout when logged out and guest do not have viewing rights
+	 * @throws NoPermissionLoggedin when account does not have permission to view this thread
+	 * @throws VBulletinAPIException when less common errors occur
+	 */
+	public ForumThread threadView(ForumThread thread, int page, int perpage) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		return threadView(""+thread.getThreadId(), ""+page, ""+perpage);
+	}
+	/**Attempts to view a thread and all the posts of which page the postid is specified is on.
+	 * @param threadid Id of Thread to view
+	 * @param page Page number to view
+	 * @param perpage Number of Posts to view per page(alters the results of the page parameter)
 	 * @return
 	 * @throws InvalidId Thread does no exist or left blank
 	 * @throws NoPermissionLoggedout when logged out and guest do not have viewing rights
@@ -1640,9 +1724,9 @@ public final class VBulletinAPI extends Thread{
 		return threadView(""+threadid, ""+page, ""+perpage);
 	}
 	/**Attempts to view a thread and all the posts of which page the postid is specified is on.
-	 * @param threadid the thread to view
-	 * @param page determines which page to view.
-	 * @param perpage determines how many posts to view per page(alters the results of the page parameter)
+	 * @param threadid Id of Thread to view
+	 * @param page Page number to view
+	 * @param perpage Number of Posts to view per page(alters the results of the page parameter)
 	 * @return
 	 * @throws InvalidId Thread does no exist or left blank
 	 * @throws NoPermissionLoggedout when logged out and guest do not have viewing rights
@@ -1653,10 +1737,10 @@ public final class VBulletinAPI extends Thread{
 		return threadView(threadid, page, perpage, null, 0);
 	}
 	/**Attempts to view a thread and all the posts of which page the postid is specified is on.
-	 * @param threadid the thread to view
-	 * @param page determines which page to view.
-	 * @param perpage determines how many posts to view per page(alters the results of the page parameter)
-	 * @param postid determines which page to view based on postid, should not be used with he page parameter
+	 * @param threadid Id of Thread to view
+	 * @param page Page number to view
+	 * @param perpage Number of Posts to view per page(alters the results of the page parameter)
+	 * @param postid determines which page to view based on postid, should not be used with the 'page' parameter
 	 * @param loop how many iterations it went through
 	 * @return
 	 * @throws InvalidId Thread does no exist or left blank
@@ -1702,7 +1786,20 @@ public final class VBulletinAPI extends Thread{
 		throw new NoConnectionException();
 	}
 	/**
-	 * @param threadid the thread to search
+	 * Return last Post of this thread
+	 * @param thread Thread to search
+	 * @return null when the post cannot be found in the thread
+	 * @throws InvalidId Thread does no exist or left blank
+	 * @throws NoPermissionLoggedout when logged out and guest do not have viewing rights
+	 * @throws NoPermissionLoggedin when account does not have permission to view this thread and post
+	 * @throws VBulletinAPIException when less common errors occur
+	 */
+	public Post threadViewLastPost(ForumThread thread) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		return threadViewLastPost(thread.getThreadId());//yes, just reload it again as there could be a new post
+	}
+	/**
+	 * Return last Post of this thread
+	 * @param threadid Id of Thread to search
 	 * @return null when the post cannot be found in the thread
 	 * @throws InvalidId Thread does no exist or left blank
 	 * @throws NoPermissionLoggedout when logged out and guest do not have viewing rights
@@ -1710,27 +1807,32 @@ public final class VBulletinAPI extends Thread{
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
 	public Post threadViewLastPost(int threadid) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
-		boolean success = false;
 		ForumThread thread = null;
+		ForumThread threadReload = null;
 		thread = threadView(threadid, 1, 1);//just the first post
-		success = true;//TODO what the heck was the point of these if checks?!?!?!
-		if(success){//TODO need to check thread
-			success = false;
-			thread = threadView(threadid, thread.totalposts, 1);
-			success = true;
-			if(success){//TODO need to check thread
-				for(Post post : thread.posts){
-					if(post.islastshown){
-						return post;
-					}
-				}
+		threadReload = threadView(thread.getThreadId(), thread.getTotalPosts(), 1);
+		for(Post post : threadReload.getPosts()){
+			if(post.isLastShown()){
+				return post;
 			}
 		}
 		return null;
 	}
-	/**Attempts to view a post residing in a thread. The correct threadid is required as well
-	 * @param threadid the thread the post resides in
-	 * @param postid the post to view
+	/**Attempts to view a Post residing in a thread.
+	 * @param thread Thread the Post resides in
+	 * @param postid Id of Post to view
+	 * @return null when the post cannot be found in the thread
+	 * @throws InvalidId Thread does no exist or left blank
+	 * @throws NoPermissionLoggedout when logged out and guest do not have viewing rights
+	 * @throws NoPermissionLoggedin when account does not have permission to view this thread and post
+	 * @throws VBulletinAPIException when less common errors occur
+	 */
+	public Post threadViewPost(ForumThread thread, int postid) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		return threadViewPost(thread.getThreadId(), postid);
+	}
+	/**Attempts to view a Post residing in a thread.
+	 * @param threadid If of Thread the Post resides in
+	 * @param postid Id of Post to view
 	 * @return null when the post cannot be found in the thread
 	 * @throws InvalidId Thread does no exist or left blank
 	 * @throws NoPermissionLoggedout when logged out and guest do not have viewing rights
