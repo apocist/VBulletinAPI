@@ -101,7 +101,7 @@ public final class VBulletinAPI extends Thread{
 											LinkedTreeMap<String, Object> message = (LinkedTreeMap<String, Object>) messageGroup.get("messagelistbits");
 											LinkedTreeMap<String, Object> pm = (LinkedTreeMap<String, Object>) message.get("messagelistbits");
 											parsedMessage.pmid = Functions.convertToInt(pm.get("pmid"));
-											parsedMessage.sendtime = Functions.convertToString(pm.get("sendtime"));
+											parsedMessage.sendtime = Functions.convertToInt(pm.get("sendtime"));
 											parsedMessage.statusicon = Functions.convertToString(pm.get("statusicon"));
 											parsedMessage.title = Functions.convertToString(pm.get("title"));
 
@@ -114,7 +114,7 @@ public final class VBulletinAPI extends Thread{
 												Message parsedMessage = new Message();
 												LinkedTreeMap<String, Object> pm = (LinkedTreeMap<String, Object>) message.get("messagelistbits");
 												parsedMessage.pmid = Functions.convertToInt(pm.get("pmid"));
-												parsedMessage.sendtime = Functions.convertToString(pm.get("sendtime"));
+												parsedMessage.sendtime = Functions.convertToInt(pm.get("sendtime"));
 												parsedMessage.statusicon = Functions.convertToString(pm.get("statusicon"));
 												parsedMessage.title = Functions.convertToString(pm.get("title"));
 
@@ -139,7 +139,7 @@ public final class VBulletinAPI extends Thread{
 												LinkedTreeMap<String, Object> message = (LinkedTreeMap<String, Object>) messageGroup.get("messagelistbits");
 												LinkedTreeMap<String, Object> pm = (LinkedTreeMap<String, Object>) message.get("messagelistbits");
 												parsedMessage.pmid = Functions.convertToInt(pm.get("pmid"));
-												parsedMessage.sendtime = Functions.convertToString(pm.get("sendtime"));
+												parsedMessage.sendtime = Functions.convertToInt(pm.get("sendtime"));
 												parsedMessage.statusicon = Functions.convertToString(pm.get("statusicon"));
 												parsedMessage.title = Functions.convertToString(pm.get("title"));
 
@@ -152,7 +152,7 @@ public final class VBulletinAPI extends Thread{
 													Message parsedMessage = new Message();
 													LinkedTreeMap<String, Object> pm = (LinkedTreeMap<String, Object>) message.get("messagelistbits");
 													parsedMessage.pmid = Functions.convertToInt(pm.get("pmid"));
-													parsedMessage.sendtime = Functions.convertToString(pm.get("sendtime"));
+													parsedMessage.sendtime = Functions.convertToInt(pm.get("sendtime"));
 													parsedMessage.statusicon = Functions.convertToString(pm.get("statusicon"));
 													parsedMessage.title = Functions.convertToString(pm.get("title"));
 
@@ -248,19 +248,6 @@ public final class VBulletinAPI extends Thread{
 					LinkedTreeMap HTML = (LinkedTreeMap) ((LinkedTreeMap)response.get("response")).get("HTML");
 					if(HTML.containsKey("totalmessages")){
 						theReturn = "totalmessages";
-					}
-					else if(HTML.containsKey("postbit")){
-						if(HTML.get("postbit") instanceof LinkedTreeMap){
-							LinkedTreeMap postbit = (LinkedTreeMap) HTML.get("postbit");
-							if(postbit.containsKey("post")){
-								if(postbit.get("post") instanceof LinkedTreeMap){
-									LinkedTreeMap post = (LinkedTreeMap) postbit.get("post");
-									if(post.containsKey("message")){
-										theReturn = (String) post.get("message");
-									}
-								}
-							}
-						}
 					}
 					else if(HTML.containsKey("postpreview")){
 						if(HTML.get("postpreview") instanceof LinkedTreeMap){
@@ -864,6 +851,7 @@ public final class VBulletinAPI extends Thread{
 	public ArrayList<Message> messageList() throws NoPermissionLoggedout, VBulletinAPIException{
 		return messageList(0);
 	}
+	//TODO need to redo this entire section
 	/**Returns list of PMs in the primary inbox
 	 * @return
 	 * @throws NoPermissionLoggedout when logged out
@@ -877,9 +865,9 @@ public final class VBulletinAPI extends Thread{
 			if(loop < 4){//no infinite loop by user
 				try {
 					msgList = parseMessages(callMethod("private_messagelist", params, true));
-					for(Message msg: msgList){
+					/*for(Message msg: msgList){//TODO should not need to grab the 
 						msg.message = messageView(msg.pmid);
-					}
+					}*/
 				} catch (InvalidAccessToken | NoPermissionLoggedout e) {
 					login();
 					if(isLoggedin()){
@@ -979,62 +967,63 @@ public final class VBulletinAPI extends Thread{
 	}
 	/**Grabs the message from the PM specified by the pmID
 	 * @param pmId
-	 * @return message text as String
+	 * @return Message
 	 * @throws InvalidId on non existent Private Message
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public String messageView(int pmId) throws InvalidId, NoPermissionLoggedout, VBulletinAPIException{
+	public Message messageView(int pmId) throws InvalidId, NoPermissionLoggedout, VBulletinAPIException{
 		return messageView(pmId+"", 0);
 	}
 	/**Grabs the message from the PM specified by the pmID
 	 * @param pmId
-	 * @return message text as String
+	 * @return Message
 	 * @throws InvalidId on non existent Private Message
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public String messageView(String pmId) throws InvalidId, NoPermissionLoggedout, VBulletinAPIException{
+	public Message messageView(String pmId) throws InvalidId, NoPermissionLoggedout, VBulletinAPIException{
 		return messageView(pmId, 0);
 	}
 	/**Grabs the message from the PM specified by the pmID
 	 * @param pmId
 	 * @param loop increasing int to prevent infinite loops
-	 * @return message text as String
+	 * @return Message
 	 * @throws InvalidId on non existent Private Message
 	 * @throws NoPermissionLoggedout when logged out
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	private String messageView(String pmId, int loop) throws InvalidId, NoPermissionLoggedout, VBulletinAPIException{
+	private Message messageView(String pmId, int loop) throws InvalidId, NoPermissionLoggedout, VBulletinAPIException{
 		if(isConnected()){
-			String errorMsg = null;
+			Message message = null;
 			loop++;
-			if(pmId != null){
-				HashMap<String, String> params = new HashMap<String, String>();
-				params.put("pmid", pmId);
-				errorMsg = parseResponse(callMethod("private_showpm", params, true));
-				if(loop < 4){//no infinite loop by user
-					if(errorMsg != null){
-						if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
-							login();
-							if(isLoggedin()){
-								return messageView(pmId, loop);
-							}
-						}
-						else if(errorMsg.equals("invalid_api_signature")){
+			HashMap<String, String> params = new HashMap<String, String>();
+			params.put("pmid", pmId);
+			if(loop < 4){//no infinite loop by user
+				try {
+					message = new Message().parse(callMethod("private_showpm", params, true));
+				} catch (InvalidAccessToken e) {
+					if(this.isCredentialsSet()){
+						login();
+						if(isLoggedin()){
 							return messageView(pmId, loop);
 						}
-						else{//success
-							return errorMsg;
+					}
+					throw e;
+				} catch (NoPermissionLoggedout e) {
+					if(this.isCredentialsSet()){
+						login();
+						if(isLoggedin()){
+							return messageView(pmId, loop);
 						}
 					}
+					throw e;
+				} catch (InvalidAPISignature e) {
+					return messageView(pmId, loop);
 				}
-				else if(errorMsg.equals("invalidid")){
-					throw new InvalidId("private message");
-				}
-				errorsCommon(errorMsg);
+				return message;
 			}
-			throw new VBulletinAPIException("vBulletin API Unknown Error - "+errorMsg);
+			return new Message().parse(callMethod("private_showpm", params, true));
 		}
 		throw new NoConnectionException();
 	}
