@@ -219,78 +219,38 @@ public class Forum{
 	 * @throws NoPermissionLoggedin
 	 * @throws VBulletinAPIException All generic or unknown errors
 	 */
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	protected Forum parse(LinkedTreeMap<String, Object> response) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		if(response != null){
 			if(response.containsKey("response")){
-				@SuppressWarnings("unchecked")
 				LinkedTreeMap<String, Object> response2 = (LinkedTreeMap<String, Object>)response.get("response");
-				if(response2.containsKey("daysprune")){
-					this.daysprune = Functions.convertToInt(response2.get("daysprune"));
-				}
-				if(response2.containsKey("limitlower")){
-					this.limitlower = Functions.convertToInt(response2.get("limitlower"));
-				}
-				if(response2.containsKey("limitupper")){
-					this.limitupper = Functions.convertToInt(response2.get("limitupper"));
-				}
-				if(response2.containsKey("numberguest")){
-					this.numberguest = Functions.convertToInt(response2.get("numberguest"));
-				}
-				if(response2.containsKey("numberguest")){
-					this.numberguest = Functions.convertToInt(response2.get("numberguest"));
-				}
-				if(response2.containsKey("numberregistered")){
-					this.numberregistered = Functions.convertToInt(response2.get("numberregistered"));
-				}
-				if(response2.containsKey("pagenumber")){
-					this.pagenumber = Functions.convertToInt(response2.get("pagenumber"));
-				}
-				if(response2.containsKey("perpage")){
-					this.perpage = Functions.convertToInt(response2.get("perpage"));
-				}
-				if(response2.containsKey("totalmods")){
-					this.totalmods = Functions.convertToInt(response2.get("totalmods"));
-				}
-				if(response2.containsKey("totalonline")){
-					this.totalonline = Functions.convertToInt(response2.get("totalonline"));
-				}
-				if(response2.containsKey("totalthreads")){
-					this.totalthreads = Functions.convertToInt(response2.get("totalthreads"));
-				}
-				//foruminfo {}
+				this.daysprune = Functions.fetchInt(response2, "daysprune");
+				this.limitlower = Functions.fetchInt(response2, "limitlower");
+				this.limitupper = Functions.fetchInt(response2, "limitupper");
+				this.numberguest = Functions.fetchInt(response2, "numberguest");
+				this.numberregistered = Functions.fetchInt(response2, "numberregistered");
+				this.pagenumber = Functions.fetchInt(response2, "pagenumber");
+				this.perpage = Functions.fetchInt(response2, "perpage");
+				this.totalmods = Functions.fetchInt(response2, "totalmods");
+				this.totalonline = Functions.fetchInt(response2, "totalonline");
+				this.totalthreads = Functions.fetchInt(response2, "totalthreads");
 				if(response2.containsKey("foruminfo")){
-					LinkedTreeMap foruminfo = (LinkedTreeMap)response2.get("foruminfo");
-					if(foruminfo.containsKey("forumid")){
-						this.forumid = Functions.convertToInt(foruminfo.get("forumid"));
-					}
-					if(foruminfo.containsKey("title")){
-						this.title = Functions.convertToString(foruminfo.get("title"));
-					}
-					if(foruminfo.containsKey("title_clean")){
-						this.title_clean = Functions.convertToString(foruminfo.get("title_clean"));
-					}
-					if(foruminfo.containsKey("description")){
-						this.description = Functions.convertToString(foruminfo.get("description"));
-					}
-					if(foruminfo.containsKey("description_clean")){
-						this.description_clean = Functions.convertToString(foruminfo.get("description_clean"));
-					}
-					if(foruminfo.containsKey("prefixrequired")){
-						this.prefixrequired = Functions.convertToInt(foruminfo.get("prefixrequired"));
-					}
+					LinkedTreeMap foruminfo = (LinkedTreeMap<String, Object>)response2.get("foruminfo");
+					this.forumid = Functions.fetchInt(foruminfo, "forumid");
+					this.title = Functions.fetchString(foruminfo, "title");
+					this.title_clean = Functions.fetchString(foruminfo, "title_clean");
+					this.description = Functions.fetchString(foruminfo, "description");
+					this.description_clean = Functions.fetchString(foruminfo, "description_clean");
+					this.prefixrequired = Functions.fetchInt(foruminfo, "prefixrequired");
 				}
-				//forumbits []
 				if(response2.containsKey("forumbits")){
 					if(response2.get("forumbits") instanceof ArrayList){//multiple posts
-						@SuppressWarnings("unchecked")
 						ArrayList<LinkedTreeMap<String, Object>> forumbits = (ArrayList<LinkedTreeMap<String, Object>>) response2.get("forumbits");
 						for(LinkedTreeMap<String, Object> forumHolder : forumbits){
 							this.subforums.add(new Forum().parseSub(forumHolder));
 						}
 					}
 					else if(response2.get("forumbits") instanceof LinkedTreeMap){//multiple posts
-						@SuppressWarnings("unchecked")
 						LinkedTreeMap<String, Object> forumbit = (LinkedTreeMap<String, Object>) response2.get("forumbits");
 						this.subforums.add(new Forum().parseSub(forumbit));
 					}
@@ -301,7 +261,6 @@ public class Forum{
 						theError = (String)response2.get("errormessage");
 						if(theError.equals("redirect_postthanks")){//this is for newthread and newpost
 							if(response.get("show") instanceof LinkedTreeMap){
-								@SuppressWarnings("unchecked")
 								LinkedTreeMap<String, Object> show = (LinkedTreeMap<String, Object>)response.get("show");
 								if(show.containsKey("threadid")){
 									theError = ""+Functions.convertToInt(show.get("threadid"));
@@ -313,7 +272,6 @@ public class Forum{
 						}
 					}
 					else if(response2.get("errormessage") instanceof ArrayList){
-						@SuppressWarnings("unchecked")
 						Object[] errors = ((ArrayList<String>) response2.get("errormessage")).toArray();
 						if(errors.length > 0){
 							theError = errors[0].toString();
@@ -340,65 +298,41 @@ public class Forum{
 	 * @throws NoPermissionLoggedin
 	 * @throws VBulletinAPIException All generic or unknown errors
 	 */
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	protected Forum parseSub(LinkedTreeMap<String, Object> forumbit) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		if(forumbit != null){
-			if(forumbit.containsKey("parent_is_category")){
-				this.parent_is_category = Functions.convertToBoolean(forumbit.get("parent_is_category"));
-			}
+			this.parent_is_category = Functions.fetchBoolean(forumbit, "parent_is_category");
 			if(forumbit.containsKey("forum")){
-				LinkedTreeMap forumdata = (LinkedTreeMap)forumbit.get("forum");
-				if(forumdata.containsKey("forumid")){
-					this.forumid = Functions.convertToInt(forumdata.get("forumid"));
-				}
-				if(forumdata.containsKey("threadcount")){
-					this.threadcount = Functions.convertToInt(forumdata.get("threadcount"));
-				}
-				if(forumdata.containsKey("replycount")){
-					this.replycount = Functions.convertToInt(forumdata.get("replycount"));
-				}
-				if(forumdata.containsKey("title")){
-					this.title = Functions.convertToString(forumdata.get("title"));
-				}
-				if(forumdata.containsKey("title_clean")){
-					this.title_clean = Functions.convertToString(forumdata.get("title_clean"));
-				}
-				if(forumdata.containsKey("description")){
-					this.description = Functions.convertToString(forumdata.get("description"));
-				}
-				if(forumdata.containsKey("description_clean")){
-					this.description_clean = Functions.convertToString(forumdata.get("description_clean"));
-				}
-				if(forumdata.containsKey("statusicon")){
-					this.statusicon = Functions.convertToString(forumdata.get("statusicon"));
-				}
-				if(forumdata.containsKey("browsers")){
-					this.browsers = Functions.convertToInt(forumdata.get("browsers"));
-				}
+				LinkedTreeMap forumdata = (LinkedTreeMap<String, Object>)forumbit.get("forum");
+				this.forumid = Functions.fetchInt(forumdata, "forumid");
+				this.threadcount = Functions.fetchInt(forumdata, "threadcount");
+				this.replycount = Functions.fetchInt(forumdata, "replycount");
+				this.title = Functions.fetchString(forumdata, "title");
+				this.title_clean = Functions.fetchString(forumdata, "title_clean");
+				this.description = Functions.fetchString(forumdata, "description");
+				this.description_clean = Functions.fetchString(forumdata, "description_clean");
+				this.statusicon = Functions.fetchString(forumdata, "statusicon");
+				this.browsers = Functions.fetchInt(forumdata, "browsers");
 				if(forumbit.containsKey("childforumbits")){//yes...within the forumdata if statement
 					if(forumbit.get("childforumbits") instanceof ArrayList){
-						@SuppressWarnings("unchecked")
 						ArrayList<LinkedTreeMap<String, Object>> childforumbits = (ArrayList<LinkedTreeMap<String, Object>>) forumbit.get("childforumbits");
 						for(LinkedTreeMap<String, Object> childforumHolder : childforumbits){
 							this.subforums.add(new Forum().parseSub(childforumHolder));
 						}
 					}
 					else if(forumbit.get("childforumbits") instanceof LinkedTreeMap){
-						@SuppressWarnings("unchecked")
 						LinkedTreeMap<String, Object> childforumbit = (LinkedTreeMap<String, Object>) forumbit.get("childforumbits");
 						this.subforums.add(new Forum().parseSub(childforumbit));
 					}
 				}
 				if(forumdata.containsKey("subforums")){
 					if(forumdata.get("subforums") instanceof ArrayList){
-						@SuppressWarnings("unchecked")
 						ArrayList<LinkedTreeMap<String, Object>> subforums = (ArrayList<LinkedTreeMap<String, Object>>) forumdata.get("subforums");
 						for(LinkedTreeMap<String, Object> subforumHolder : subforums){
 							this.subforums.add(new Forum().parseSub(subforumHolder));
 						}
 					}
 					else if(forumdata.get("subforums") instanceof LinkedTreeMap){
-						@SuppressWarnings("unchecked")
 						LinkedTreeMap<String, Object> subforum = (LinkedTreeMap<String, Object>) forumdata.get("subforums");
 						this.subforums.add(new Forum().parseSub(subforum));
 					}

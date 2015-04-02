@@ -17,7 +17,7 @@ public class Member{
 	protected int userid;
 	protected String avatarurl;
 	protected String usertitle;
-	protected String joindate;//TODO is this string?(need to check)
+	protected int joindate;//TODO is this string?(need to check)
 	//TODO many variables missing
 	
 	
@@ -25,32 +25,18 @@ public class Member{
 	public String getUsername() {
 		return username;
 	}
-
-
-
 	public int getUserId() {
 		return userid;
 	}
-
-
-
 	public String getAvatarUrl() {
 		return avatarurl;
 	}
-
-
-
 	public String getUserTitle() {
 		return usertitle;
 	}
-
-
-
-	public String getJoinDate() {
+	public int getJoinDate() {
 		return joindate;
 	}
-
-
 
 	/** Parses json from viewMember into
 	 * username
@@ -67,27 +53,19 @@ public class Member{
 	 * @throws NoPermissionLoggedout
 	 * @throws InvalidAPISignature
 	 */
+	@SuppressWarnings("unchecked")
 	protected Member parse(LinkedTreeMap<String, Object> response) throws NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		if(response != null){
 			if(response.containsKey("response")){
-				@SuppressWarnings("unchecked")
+				
 				LinkedTreeMap<String, Object> response2 = (LinkedTreeMap<String, Object>)response.get("response");
 				if(response2.containsKey("prepared")){
 					if(response2.get("prepared") instanceof LinkedTreeMap){
-						@SuppressWarnings("unchecked")
 						LinkedTreeMap<String, Object> prepared = (LinkedTreeMap<String, Object>)response2.get("prepared");
-						if(prepared.containsKey("username")){
-							this.username = Functions.convertToString(prepared.get("username"));
-						}
-						if(prepared.containsKey("userid")){
-							this.userid = Functions.convertToInt(prepared.get("userid"));
-						}
-						if(prepared.containsKey("joindate")){
-							this.joindate = Functions.convertToString(prepared.get("joindate"));//TODO is this string?(need to check)
-						}
-						if(prepared.containsKey("avatarurl")){
-							this.avatarurl = Functions.convertToString(prepared.get("avatarurl"));
-						}
+						this.username = Functions.fetchString(prepared, "username");
+						this.userid = Functions.fetchInt(prepared, "userid");
+						this.joindate = Functions.fetchInt(prepared, "joindate");
+						this.avatarurl = Functions.fetchString(prepared, "avatarurl");
 					}
 				}
 				if(response2.containsKey("errormessage")){
@@ -96,7 +74,6 @@ public class Member{
 						theError = (String)response2.get("errormessage");
 						if(theError.equals("redirect_postthanks")){//this is for newthread and newpost
 							if(response.get("show") instanceof LinkedTreeMap){
-								@SuppressWarnings("unchecked")
 								LinkedTreeMap<String, Object> show = (LinkedTreeMap<String, Object>)response.get("show");
 								if(show.containsKey("threadid")){
 									theError = ""+Functions.convertToInt(show.get("threadid"));
@@ -108,7 +85,6 @@ public class Member{
 						}
 					}
 					else if(response2.get("errormessage") instanceof ArrayList){
-						@SuppressWarnings("unchecked")
 						Object[] errors = ((ArrayList<String>) response2.get("errormessage")).toArray();
 						if(errors.length > 0){
 							theError = errors[0].toString();

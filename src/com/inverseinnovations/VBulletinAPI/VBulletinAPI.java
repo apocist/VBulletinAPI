@@ -455,7 +455,7 @@ public final class VBulletinAPI extends Thread{
 	 * @throws NoPermissionLoggedin when account does not have permission to view this thread
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	private Forum forumHome(int loop) throws NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+	private Forum forumHome(int loop) throws NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{//TODO think that i forgot that I am grabbing the wrong info..double check
 		if(isConnected()){
 			Forum forum = null;
 			loop++;

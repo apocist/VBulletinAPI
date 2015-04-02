@@ -21,55 +21,42 @@ public class Post{
 	public int getPostId() {
 		return postid;
 	}
-
 	public long getPostTime() {
 		return posttime;
 	}
-
 	public int getThreadId() {
 		return threadid;
 	}
-
 	public int getUserId() {
 		return userid;
 	}
-
 	public String getUsername() {
 		return username;
 	}
-
 	public String getAvatarUrl() {
 		return avatarurl;
 	}
-
 	public String getUserTitle() {
 		return usertitle;
 	}
-
 	public long getJoinDate() {
 		return joindate;
 	}
-
 	public String getTitle() {
 		return title;
 	}
-
 	public boolean isFirstShown() {
 		return isfirstshown;
 	}
-
 	public boolean isLastShown() {
 		return islastshown;
 	}
-
 	public String getMessage() {
 		return message;
 	}
-
 	public String getMessagePlain() {
 		return message_plain;
 	}
-
 	public String getMessageBbcode() {
 		return message_bbcode;
 	}
@@ -78,56 +65,32 @@ public class Post{
 	 * @param LinkedTreeMap from ForumThread
 	 * @return Post
 	 */
+	@SuppressWarnings("unchecked")
 	protected Post parse(LinkedTreeMap<String, Object> postHolder) {
 		if(postHolder.containsKey("post")){
-			@SuppressWarnings("unchecked")
 			LinkedTreeMap<String, Object> postPost = (LinkedTreeMap<String, Object>) postHolder.get("post");
-			if(postPost.containsKey("postid")){
-				this.postid = Functions.convertToInt(postPost.get("postid"));
-			}
+			this.postid = Functions.fetchInt(postPost, "postid");
 			if(postPost.containsKey("posttime")){
 				if(Functions.isInteger((String) postPost.get("posttime"))){
 					this.posttime = Long.parseLong((String) postPost.get("posttime"));//TODO check
 				}
 			}
-			if(postPost.containsKey("threadid")){
-				this.threadid = Functions.convertToInt(postPost.get("threadid"));
-			}
-			if(postPost.containsKey("userid")){
-				this.userid = Functions.convertToInt(postPost.get("userid"));
-			}
-			if(postPost.containsKey("username")){
-				this.username = Functions.convertToString(postPost.get("username"));
-			}
-			if(postPost.containsKey("avatarurl")){
-				this.avatarurl = Functions.convertToString(postPost.get("avatarurl"));
-			}
-			if(postPost.containsKey("usertitle")){
-				this.usertitle = Functions.convertToString(postPost.get("usertitle"));
-			}
+			this.threadid = Functions.fetchInt(postPost, "threadid");
+			this.userid = Functions.fetchInt(postPost, "userid");
+			this.username = Functions.fetchString(postPost, "username");
+			this.avatarurl = Functions.fetchString(postPost, "avatarurl");
+			this.usertitle = Functions.fetchString(postPost, "usertitle");
 			if(postPost.containsKey("joindate")){
 				if(Functions.isInteger((String) postPost.get("joindate"))){
 					this.joindate = Long.parseLong((String) postPost.get("joindate"));//TODO check
 				}
 			}
-			if(postPost.containsKey("title")){
-				this.title = Functions.convertToString(postPost.get("title"));
-			}
-			if(postPost.containsKey("isfirstshown")){
-				this.isfirstshown = Functions.convertToBoolean(postPost.get("isfirstshown"));
-			}
-			if(postPost.containsKey("islastshown")){
-				this.islastshown = Functions.convertToBoolean(postPost.get("islastshown"));
-			}
-			if(postPost.containsKey("message")){
-				this.message = Functions.convertToString(postPost.get("message"));
-			}
-			if(postPost.containsKey("message_plain")){
-				this.message_plain = Functions.convertToString(postPost.get("message_plain"));
-			}
-			if(postPost.containsKey("message_bbcode")){
-				this.message_bbcode = Functions.convertToString(postPost.get("message_bbcode"));
-			}
+			this.title = Functions.fetchString(postPost, "title");
+			this.isfirstshown = Functions.fetchBoolean(postPost, "isfirstshown");
+			this.islastshown = Functions.fetchBoolean(postPost, "islastshown");
+			this.message = Functions.fetchString(postPost, "message");
+			this.message_plain = Functions.fetchString(postPost, "message_plain");
+			this.message_bbcode = Functions.fetchString(postPost, "message_bbcode");
 		}
 		return this;
 	}

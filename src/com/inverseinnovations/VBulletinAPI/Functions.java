@@ -8,6 +8,8 @@ import java.nio.charset.Charset;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 
+import com.google.gson.internal.LinkedTreeMap;
+
 class Functions {
 	
 	/**Converts raw objects(String/Integer/Boolean/Double) to Int
@@ -85,6 +87,33 @@ class Functions {
 			retur = (Boolean)object;
 		}
 		return retur;
+	}
+	/**
+	 * Returns a Variable from the supplied Map if it exist, as a boolean
+	 * @param map LinkedTreeMap<String, Object> to search within
+	 * @param variable The variable to fetch
+	 * @return boolean, false if not existent
+	 */
+	public static boolean fetchBoolean(LinkedTreeMap<String, Object> map, String variable) {
+		  return (map.containsKey(variable)) ? convertToBoolean(map.get(variable)) : false;
+	}
+	/**
+	 * Returns a Variable from the supplied Map if it exist, as an Int
+	 * @param map LinkedTreeMap<String, Object> to search within
+	 * @param variable The variable to fetch
+	 * @return int, 0 if not existent
+	 */
+	public static int fetchInt(LinkedTreeMap<String, Object> map, String variable) {
+		  return (map.containsKey(variable)) ? convertToInt(map.get(variable)) : 0;
+	}
+	/**
+	 * Returns a Variable from the supplied Map if it exist, as a String
+	 * @param map LinkedTreeMap<String, Object> to search within
+	 * @param variable The variable to fetch
+	 * @return String, null if not existent
+	 */
+	public static String fetchString(LinkedTreeMap<String, Object> map, String variable) {
+		  return (map.containsKey(variable)) ? convertToString(map.get(variable)) : null;
 	}
 	/**
 	 * Returns a String built from the InputStream

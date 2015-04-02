@@ -107,33 +107,17 @@ public class Message{
 					if(response2.get("HTML") instanceof LinkedTreeMap){
 						LinkedTreeMap<String, Object> HTML = (LinkedTreeMap<String, Object>)response2.get("HTML");
 						//TODO need to test, arrayed?
-						/*if(HTML.containsKey("bccrecipients")){
-							this.bccrecipients = Functions.convertToString(HTML.get("bccrecipients"));
-						}
-						if(HTML.containsKey("ccrecipients")){
-							this.ccrecipients = Functions.convertToString(HTML.get("ccrecipients"));
-						}*/
+						//this.bccrecipients = Functions.fetchString(HTML, "bccrecipients");
+						//this.ccrecipients = Functions.fetchString(HTML, "ccrecipients");
 						if(HTML.containsKey("pm")){
 							if(HTML.get("pm") instanceof LinkedTreeMap){
 								LinkedTreeMap<String, Object> pm = (LinkedTreeMap<String, Object>) HTML.get("pm");
-								if(pm.containsKey("pmid")){
-									this.pmid = Functions.convertToInt(pm.get("pmid"));
-								}
-								if(pm.containsKey("title")){
-									this.title = Functions.convertToString(pm.get("title"));
-								}
-								/*if(pm.containsKey("recipients")){//TODO could be array?
-									this.recipients = Functions.convertToString(pm.get("recipients"));
-								}*/
-								if(pm.containsKey("savecopy")){
-									this.savecopy = Functions.convertToBoolean(pm.get("savecopy"));
-								}
-								if(pm.containsKey("folderid")){
-									this.folderid = Functions.convertToInt(pm.get("folderid"));
-								}
-								if(pm.containsKey("fromusername")){
-									this.fromusername = Functions.convertToString(pm.get("fromusername"));
-								}
+								this.pmid = Functions.fetchInt(pm, "pmid");
+								this.title = Functions.fetchString(pm, "title");
+								//this.recipients = Functions.fetchString(pm, "recipients");
+								this.savecopy = Functions.fetchBoolean(pm, "savecopy");
+								this.folderid = Functions.fetchInt(pm, "folderid");
+								this.fromusername = Functions.fetchString(pm, "fromusername");
 							}
 						}
 						if(HTML.containsKey("postbit")){
@@ -142,74 +126,30 @@ public class Message{
 								if(postbit.containsKey("post")){
 									if(postbit.get("post") instanceof LinkedTreeMap){
 										LinkedTreeMap<String, Object> post = (LinkedTreeMap<String, Object>) postbit.get("post");
-										if(post.containsKey("statusicon")){
-											this.statusicon = Functions.convertToString(post.get("statusicon"));
-										}
-										if(post.containsKey("posttime")){
-											this.sendtime = Functions.convertToInt(post.get("posttime"));
-										}
-										/*if(post.containsKey("checkbox_value")){
-											this.checkbox_value = Functions.convertToBoolean(post.get("checkbox_value"));
-										}*/
-										if(post.containsKey("onlinestatusphrase")){
-											this.onlinestatusphrase = Functions.convertToString(post.get("onlinestatusphrase"));
-										}
-										if(post.containsKey("userid")){
-											this.userid = Functions.convertToInt(post.get("userid"));
-										}
-										if(post.containsKey("username")){
-											this.username = Functions.convertToString(post.get("username"));
-										}
-										if(post.containsKey("avatarurl")){
-											this.avatarurl = Functions.convertToString(post.get("avatarurl"));
-										}
-										/*if(post.containsKey("onlinestatus")){//TODO array
-											this.onlinestatus = Functions.convertToString(post.get("onlinestatus"));
-										}*/
-										if(post.containsKey("usertitle")){
-											this.usertitle = Functions.convertToString(post.get("usertitle"));
-										}
-										/*if(post.containsKey("rank")){//TODO need to parse?
-											this.rank = Functions.convertToString(post.get("rank"));
-										}*/
-										/*if(post.containsKey("reputationdisplay")){//TODO array
-											this.reputationdisplay = Functions.convertToString(post.get("reputationdisplay"));
-										}*/
-										if(post.containsKey("joindate")){
-											this.joindate = Functions.convertToInt(post.get("joindate"));
-										}
-										/*if(post.containsKey("field2")){//TODO is this used globally?
-											this.field2 = Functions.convertToString(post.get("field2"));
-										}*/
-										if(post.containsKey("warnings")){
-											this.warnings = Functions.convertToInt(post.get("warnings"));
-										}
-										if(post.containsKey("infractions")){
-											this.infractions = Functions.convertToInt(post.get("infractions"));
-										}
-										if(post.containsKey("ipoints")){
-											this.ipoints = Functions.convertToInt(post.get("ipoints"));
-										}
-										if(post.containsKey("reppower")){
-											this.reppower = Functions.convertToInt(post.get("reppower"));
-										}
-										/*if(post.containsKey("title")){//Already defined?
-											this.title = Functions.convertToString(post.get("title"));
-										}*/
-										if(post.containsKey("message")){
-											this.message = Functions.convertToString(post.get("message"));
-										}
-										if(post.containsKey("message_plain")){
-											this.message_plain = Functions.convertToString(post.get("message_plain"));
-										}
-										if(post.containsKey("message_bbcode")){
-											this.message_bbcode = Functions.convertToString(post.get("message_bbcode"));
-										}
+										this.statusicon = Functions.fetchString(post, "statusicon");
+										this.sendtime = Functions.fetchInt(post, "posttime");
+										//this.checkbox_value = Functions.fetchBoolean(post, "checkbox_value");
+										this.onlinestatusphrase = Functions.fetchString(post, "onlinestatusphrase");
+										this.userid = Functions.fetchInt(post, "userid");
+										this.username = Functions.fetchString(post, "username");
+										this.avatarurl = Functions.fetchString(post, "avatarurl");
+										//this.onlinestatus = Functions.fetchString(post, "onlinestatus");
+										this.usertitle = Functions.fetchString(post, "usertitle");
+										//this.rank = Functions.fetchString(post, "rank");
+										//this.reputationdisplay = Functions.fetchString(post, "reputationdisplay");
+										this.joindate = Functions.fetchInt(post, "joindate");
+										//this.field2 = Functions.fetchString(post, "field2");//TODO is this used globally?
+										this.warnings = Functions.fetchInt(post, "warnings");
+										this.infractions = Functions.fetchInt(post, "infractions");
+										this.ipoints = Functions.fetchInt(post, "ipoints");
+										this.reppower = Functions.fetchInt(post, "reppower");
+										//this.title = Functions.fetchString(post, "title");//Already defined?
+										this.message = Functions.fetchString(post, "message");
+										this.message_plain = Functions.fetchString(post, "message_plain");
+										this.message_bbcode = Functions.fetchString(post, "message_bbcode");
 									}
 								}
-								/*if(postbit.containsKey("postbit_type")){//TODO may need to process the type here
-									this.postbit_type = Functions.convertToString(postbit.get("postbit_type"));
-								}*/
+								//this.postbit_type = Functions.fetchString(postbit, "postbit_type");//TODO may need to process the type here
 								/*if(postbit.containsKey("show")){
 									if(postbit.get("show") instanceof LinkedTreeMap){
 										LinkedTreeMap<String, Object> show = (LinkedTreeMap<String, Object>) postbit.get("show");

@@ -75,81 +75,53 @@ public class ForumThread{
 	 */
 	
 	
-	
 	public String getDescription() {
 		return meta_description;
 	}
-
-
 	public int getFirstPage() {
 		return firstPage;
 	}
-
-
 	public int getFirstPostId() {
 		return FIRSTPOSTID;
 	}
-
-
 	public int getForumId() {
 		return forumid;
 	}
-
-
 	public int getLastPage() {
 		return lastPage;
 	}
-
-
 	public int getLastPostId() {
 		return LASTPOSTID;
 	}
-
-
 	public int getNumberGuest() {
 		return numberguest;
 	}
-
-
 	public int getNumberRegistered() {
 		return numberregistered;
 	}
-
-
 	public int getPageNumber() {
 		return pagenumber;
 	}
-
-
 	public int getPerPage() {
 		return perpage;
 	}
-
-
 	public ArrayList<Post> getPosts() {
 		return new ArrayList<Post>(posts);
 	}
-
-
 	public int getThreadId() {
 		return threadid;
 	}
-
-
 	public String getTitle() {
 		return title;
 	}
-
-
 	public int getTotalOnline() {
 		return totalonline;
 	}
-
-
 	public int getTotalPosts() {
 		return totalposts;
 	}
 
+	
 
 	/**Returns a Thread containing all the Posts within(or specified)
 	 * @param response from callMethod
@@ -164,56 +136,28 @@ public class ForumThread{
 		if(response != null){
 			if(response.containsKey("response")){
 				LinkedTreeMap<String, Object> response2 = (LinkedTreeMap<String, Object>)response.get("response");
-				if(response2.containsKey("totalposts")){
-					this.totalposts = Functions.convertToInt(response2.get("totalposts"));
-				}
-				if(response2.containsKey("FIRSTPOSTID")){
-					this.FIRSTPOSTID = Functions.convertToInt(response2.get("FIRSTPOSTID"));
-				}
-				if(response2.containsKey("LASTPOSTID")){
-					this.LASTPOSTID = Functions.convertToInt(response2.get("LASTPOSTID"));
-				}
-				if(response2.containsKey("numberguest")){
-					this.numberguest = Functions.convertToInt(response2.get("numberguest"));
-				}
-				if(response2.containsKey("numberregistered")){
-					this.numberregistered = Functions.convertToInt(response2.get("numberregistered"));
-				}
-				if(response2.containsKey("pagenumber")){
-					this.pagenumber = Functions.convertToInt(response2.get("pagenumber"));
-				}
-				if(response2.containsKey("perpage")){
-					this.perpage = Functions.convertToInt(response2.get("perpage"));
-				}
-				if(response2.containsKey("totalonline")){
-					this.totalonline = Functions.convertToInt(response2.get("totalonline"));
-				}
+				this.totalposts = Functions.fetchInt(response2, "totalposts");
+				this.FIRSTPOSTID = Functions.fetchInt(response2, "FIRSTPOSTID");
+				this.LASTPOSTID = Functions.fetchInt(response2, "LASTPOSTID");
+				this.numberguest = Functions.fetchInt(response2, "numberguest");
+				this.numberregistered = Functions.fetchInt(response2, "numberregistered");
+				this.pagenumber = Functions.fetchInt(response2, "pagenumber");
+				this.perpage = Functions.fetchInt(response2, "perpage");
+				this.totalonline = Functions.fetchInt(response2, "totalonline");
 				if(response2.containsKey("pagenumbers")){
 					if(response2.get("pagenumbers") instanceof LinkedTreeMap){
 						LinkedTreeMap<String, Object> pagenumbers = (LinkedTreeMap<String, Object>)response2.get("pagenumbers");
-						if(pagenumbers.containsKey("first")){
-							this.firstPage = Functions.convertToInt(pagenumbers.get("first"));
-						}
-						if(pagenumbers.containsKey("last")){
-							this.lastPage = Functions.convertToInt(pagenumbers.get("last"));
-						}
+						this.firstPage = Functions.fetchInt(pagenumbers, "first");
+						this.lastPage = Functions.fetchInt(pagenumbers, "last");
 					}
 				}
 				if(response2.containsKey("thread")){
 					if(response2.get("thread") instanceof LinkedTreeMap){
 						LinkedTreeMap<String, Object> thread = (LinkedTreeMap<String, Object>)response2.get("thread");
-						if(thread.containsKey("meta_description")){
-							this.meta_description = Functions.convertToString(thread.get("meta_description"));
-						}
-						if(thread.containsKey("title")){
-							this.title = Functions.convertToString(thread.get("title"));
-						}
-						if(thread.containsKey("threadid")){
-							this.threadid = Functions.convertToInt(thread.get("threadid"));
-						}
-						if(thread.containsKey("forumid")){
-							this.forumid = Functions.convertToInt(thread.get("forumid"));
-						}
+						this.meta_description = Functions.fetchString(thread, "meta_description");
+						this.title = Functions.fetchString(thread, "title");
+						this.threadid = Functions.fetchInt(thread, "threadid");
+						this.forumid = Functions.fetchInt(thread, "forumid");
 						//TODO get keywords
 					}
 				}
