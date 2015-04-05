@@ -211,10 +211,11 @@ public class Forum{
 		return new ArrayList<Forum>(subforums);
 	}
 
+	
 	/**Returns a Forum containing all the Forums within
 	 * @param response from callMethod
-	 * @return
-	 * @throws InvalidId ThreadID missing or nonexistent
+	 * @return Forum
+	 * @throws InvalidId ForumID missing or nonexistent
 	 * @throws NoPermissionLoggedout
 	 * @throws NoPermissionLoggedin
 	 * @throws VBulletinAPIException All generic or unknown errors
@@ -255,6 +256,7 @@ public class Forum{
 						this.subforums.add(new Forum().parseSub(forumbit));
 					}
 				}
+				//TODO need to run the error checks through a function
 				if(response2.containsKey("errormessage")){
 					String theError = "";
 					if(response2.get("errormessage") instanceof String){

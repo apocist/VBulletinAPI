@@ -445,7 +445,7 @@ public final class VBulletinAPI extends Thread{
 	 * @throws NoPermissionLoggedin when account does not have permission to view this thread
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	public Forum forumHome() throws NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+	public ForumHome forumHome() throws NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
 		return forumHome(0);
 	}
 	/**Displays homepage related information
@@ -455,14 +455,14 @@ public final class VBulletinAPI extends Thread{
 	 * @throws NoPermissionLoggedin when account does not have permission to view this thread
 	 * @throws VBulletinAPIException when less common errors occur
 	 */
-	private Forum forumHome(int loop) throws NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{//TODO think that i forgot that I am grabbing the wrong info..double check
+	private ForumHome forumHome(int loop) throws NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{//TODO think that i forgot that I am grabbing the wrong info..double check
 		if(isConnected()){
-			Forum forum = null;
+			ForumHome forum = null;
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
 			if(loop < 4){//no infinite loop by user
 				try {
-					forum = new Forum().parse(callMethod("forum", params, true));
+					forum = new ForumHome().parse(callMethod("forum", params, true));
 				} catch (InvalidAccessToken e) {
 					if(this.isCredentialsSet()){
 						login();
@@ -484,13 +484,14 @@ public final class VBulletinAPI extends Thread{
 				}
 				return forum;
 			}
-			return new Forum().parse(callMethod("forum", params, true));
+			return new ForumHome().parse(callMethod("forum", params, true));
 		}
 		throw new NoConnectionException();
 	}
 	/**Displays forum data and forums/threads within
 	 * @param forumid the forum to view
 	 * @return
+	 * @throws InvalidId Forum does no exist or left blank
 	 * @throws NoPermissionLoggedout when logged out and guest do not have viewing rights
 	 * @throws NoPermissionLoggedin when account does not have permission to view this thread
 	 * @throws VBulletinAPIException when less common errors occur
@@ -501,6 +502,7 @@ public final class VBulletinAPI extends Thread{
 	/**Displays forum data and forums/threads within
 	 * @param forumid the forum to view
 	 * @return
+	 * @throws InvalidId Forum does no exist or left blank
 	 * @throws NoPermissionLoggedout when logged out and guest do not have viewing rights
 	 * @throws NoPermissionLoggedin when account does not have permission to view this thread
 	 * @throws VBulletinAPIException when less common errors occur
@@ -512,7 +514,7 @@ public final class VBulletinAPI extends Thread{
 	 * @param forumid the forum to view
 	 * @param loop how many iterations it went through
 	 * @return
-	 * @throws InvalidId Thread does no exist or left blank
+	 * @throws InvalidId Forum does no exist or left blank
 	 * @throws NoPermissionLoggedout when logged out and guest do not have viewing rights
 	 * @throws NoPermissionLoggedin when account does not have permission to view this thread
 	 * @throws VBulletinAPIException when less common errors occur
