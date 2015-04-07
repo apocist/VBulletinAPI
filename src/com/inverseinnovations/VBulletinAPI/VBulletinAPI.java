@@ -168,32 +168,7 @@ public final class VBulletinAPI extends Thread{
 						}
 					}
 				}
-				if(response2.containsKey("errormessage")){
-					String theError = "";
-					if(response2.get("errormessage") instanceof String){
-						theError = (String)response2.get("errormessage");
-						if(theError.equals("redirect_postthanks")){//this is for newthread and newpost
-							if(response.get("show") instanceof LinkedTreeMap){
-								LinkedTreeMap<String, Object> show = (LinkedTreeMap<String, Object>)response.get("show");
-								if(show.containsKey("threadid")){
-									theError = ""+Functions.convertToInt(show.get("threadid"));
-								}
-								if(show.containsKey("postid")){
-									theError += " "+Functions.convertToInt(show.get("postid"));
-								}
-							}
-						}
-					}
-					else if(response2.get("errormessage") instanceof ArrayList){
-						Object[] errors = ((ArrayList<String>) response2.get("errormessage")).toArray();
-						if(errors.length > 0){
-							theError = errors[0].toString();
-						}
-					}
-					errorsCommon(theError);
-					System.out.println("responseError  response -> errormessage type unknown: "+response2.get("errormessage").getClass().getName());
-					throw new VBulletinAPIException("vBulletin API Unknown Error - "+response2.get("errormessage").getClass().getName());
-				}
+				Functions.responseErrorCheck(response);
 			}
 		}
 		System.out.println("message all ->");

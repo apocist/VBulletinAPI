@@ -7,8 +7,11 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
+import java.util.ArrayList;
 
 import com.google.gson.internal.LinkedTreeMap;
+import com.inverseinnovations.VBulletinAPI.Exception.InvalidId;
+import com.inverseinnovations.VBulletinAPI.Exception.VBulletinAPIException;
 
 class Functions {
 	
@@ -218,5 +221,53 @@ class Functions {
 			}
 		}
 		return result.toString();
+	}
+	//TODO redo the errors
+	/**Check if there are errors, if so Throw the correct Exception
+	 * @param response from callMethod
+	 * @throws VBulletinAPIException All generic or unknown errors
+	 */
+	@SuppressWarnings("unchecked")
+	protected static void responseErrorCheck(LinkedTreeMap<String, Object> response) throws VBulletinAPIException{
+		if(response.containsKey("response")){
+			if(response.get("response") instanceof LinkedTreeMap){
+				LinkedTreeMap<String, Object> response2 = (LinkedTreeMap<String, Object>)response.get("response");
+				if(response2.containsKey("errormessage")){
+					String theError = "";
+					String errorSecond = "";
+					if(response2.get("errormessage") instanceof String){
+						theError = (String)response2.get("errormessage");
+						if(theError.equals("redirect_postthanks")){//this is for newthread and newpost
+							if(response.get("show") instanceof LinkedTreeMap){
+								LinkedTreeMap<String, Object> show = (LinkedTreeMap<String, Object>)response.get("show");
+								if(show.containsKey("threadid")){
+									theError = Functions.convertToString(show.get("threadid"));
+								}
+								if(show.containsKey("postid")){
+									errorSecond = Functions.convertToString(show.get("postid"));
+								}
+							}
+						}
+					}
+					else if(response2.get("errormessage") instanceof ArrayList){
+						Object[] errors = ((ArrayList<String>) response2.get("errormessage")).toArray();
+						if(errors.length > 0){
+							theError = errors[0].toString();
+						}
+					}
+					if(theError.equals("noid")){
+						System.out.println("Thread Parse InvalidId "+errorSecond);
+						throw new InvalidId(errorSecond);
+					}
+					String finalError = theError;
+					if(!errorSecond.isEmpty()){
+						finalError += " "+errorSecond;
+					}
+					VBulletinAPI.errorsCommon(finalError);
+					System.out.println("responseError  response -> errormessage type unknown: "+response2.get("errormessage").getClass().getName());
+					throw new VBulletinAPIException("vBulletin API Unknown Error - "+response2.get("errormessage").getClass().getName());
+				}
+			}
+		}
 	}
 }
