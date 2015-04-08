@@ -2,6 +2,11 @@ package com.inverseinnovations.VBulletinAPI;
 
 import java.util.ArrayList;
 
+import com.google.gson.internal.LinkedTreeMap;
+import com.inverseinnovations.VBulletinAPI.Exception.NoPermissionLoggedin;
+import com.inverseinnovations.VBulletinAPI.Exception.NoPermissionLoggedout;
+import com.inverseinnovations.VBulletinAPI.Exception.VBulletinAPIException;
+
 public class ForumHome{
 	protected int notifications_total;
 	protected int activemembers;
@@ -44,6 +49,10 @@ public class ForumHome{
 			userid=15607,
 			username=olegsander
 		},*/
+	/*
+	 recordtime=1.411365986E9,
+	 today=2015-03-06,
+	 */
 	/*
 	show={
 		birthdays=0.0,
@@ -88,4 +97,65 @@ public class ForumHome{
 		return new ArrayList<Forum>(subforums);
 	}
 	
+	/**Returns a Forum Homepage containing all the Forums within
+	 * @param response from callMethod
+	 * @return ForumHome
+	 * @throws NoPermissionLoggedout
+	 * @throws NoPermissionLoggedin
+	 * @throws VBulletinAPIException All generic or unknown errors
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	protected ForumHome parse(LinkedTreeMap<String, Object> response) throws NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		if(response != null){
+			if(response.containsKey("response")){
+				LinkedTreeMap<String, Object> response2 = (LinkedTreeMap<String, Object>)response.get("response");
+				if(response2.containsKey("header")){
+					LinkedTreeMap header = (LinkedTreeMap<String, Object>)response2.get("header");
+					/*if(response2.containsKey("pmbox")){
+						LinkedTreeMap pmbox = (LinkedTreeMap<String, Object>)header.get("pmbox");
+						
+					}
+					this.notifications_menubits = Functions.fetchInt(header, "notifications_menubits");*/
+					this.notifications_total = Functions.fetchInt(header, "notifications_total");
+				}
+				this.activemembers = Functions.fetchInt(response2, "activemembers");
+				/*if(response2.containsKey("activeusers")){
+					LinkedTreeMap activeusers = (LinkedTreeMap<String, Object>)response2.get("activeusers");
+				}*/
+				/*if(response2.containsKey("birthdays")){
+					LinkedTreeMap birthdays = (LinkedTreeMap<String, Object>)response2.get("birthdays");//although an array/not linkedtreemap
+				}*/
+				if(response2.containsKey("forumbits")){
+					if(response2.get("forumbits") instanceof ArrayList){//multiple posts
+						ArrayList<LinkedTreeMap<String, Object>> forumbits = (ArrayList<LinkedTreeMap<String, Object>>) response2.get("forumbits");
+						for(LinkedTreeMap<String, Object> forumHolder : forumbits){
+							this.subforums.add(new Forum().parseSub(forumHolder));
+						}
+					}
+					else if(response2.get("forumbits") instanceof LinkedTreeMap){//multiple posts
+						LinkedTreeMap<String, Object> forumbit = (LinkedTreeMap<String, Object>) response2.get("forumbits");
+						this.subforums.add(new Forum().parseSub(forumbit));
+					}
+				}
+				/*if(response2.containsKey("newuserinfo")){
+					LinkedTreeMap newuserinfo = (LinkedTreeMap<String, Object>)response2.get("newuserinfo");
+				}*/
+				this.numberguest = Functions.fetchInt(response2, "numberguest");
+				this.numbermembers = Functions.fetchInt(response2, "numbermembers");
+				this.numberregistered = Functions.fetchInt(response2, "numberregistered");
+				//this.recordtime = Functions.fetchInt(response2, "recordtime");
+				this.recordusers = Functions.fetchInt(response2, "recordusers");
+				//this.today = Functions.fetchString(response2, "today");
+				this.totalonline = Functions.fetchInt(response2, "totalonline");
+				this.totalposts = Functions.fetchInt(response2, "totalposts");
+				this.totalthreads = Functions.fetchInt(response2, "totalthreads");
+				Functions.responseErrorCheck(response);
+			}
+		}
+		if(VBulletinAPI.DEBUG){
+			//System.out.println("thread all ->");
+			System.out.println(response.toString());
+		}
+		return this;
+	}
 }
