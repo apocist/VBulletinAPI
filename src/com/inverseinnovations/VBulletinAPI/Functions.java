@@ -13,15 +13,45 @@ import com.google.gson.internal.LinkedTreeMap;
 import com.inverseinnovations.VBulletinAPI.Exception.InvalidId;
 import com.inverseinnovations.VBulletinAPI.Exception.VBulletinAPIException;
 
-class Functions {
+public class Functions {
 	
+	/**Converts raw objects(String/Integer/Boolean/Double) to Float
+	 * @param obj
+	 * @return 0 if not a number
+	 */
+	public static float convertToFloat(Object object){
+		float retur = 0;
+		if(object == null){
+			retur = 0;
+		}
+		else if(object instanceof String){
+			if(isInteger((String) object)){
+				retur = Float.parseFloat((String) object);
+			}
+		}
+		else if(object.getClass().getName().equals("java.lang.Double")){
+			retur = new Double((double) object).floatValue();
+		}
+		else if(object instanceof Integer){
+			retur = ((Integer) object).floatValue();
+		}
+		else if(object.getClass().equals(Boolean.class)){
+			if((Boolean)object){
+				retur = 1;
+			}
+		}
+		return retur;
+	}
 	/**Converts raw objects(String/Integer/Boolean/Double) to Int
 	 * @param obj
 	 * @return 0 if not a number
 	 */
-	protected static int convertToInt(Object object){
+	public static int convertToInt(Object object){
 		int retur = 0;
-		if(object instanceof String){
+		if(object == null){
+			retur = 0;
+		}
+		else if(object instanceof String){
 			if(isInteger((String) object)){
 				retur = Integer.parseInt((String) object);
 			}
@@ -43,9 +73,12 @@ class Functions {
 	 * @param obj
 	 * @return blank otherwise
 	 */
-	protected static String convertToString(Object object){
+	public static String convertToString(Object object){
 		String retur = "";
-		if(object instanceof String){
+		if(object == null){
+			retur = "";
+		}
+		else if(object instanceof String){
 			retur = (String) object;
 		}
 		else if(object.getClass().getName().equals("java.lang.Double")){
@@ -68,9 +101,12 @@ class Functions {
 	 * @param obj
 	 * @return blank otherwise
 	 */
-	protected static boolean convertToBoolean(Object object){
+	public static boolean convertToBoolean(Object object){
 		boolean retur = false;
-		if(object instanceof String){
+		if(object == null){
+			retur = false;
+		}
+		else if(object instanceof String){
 			object = ((String) object).toLowerCase();
 			if(((String)object).equals("true") || ((String)object).equals("1") || ((String)object).equals("1.0")){
 				retur = true;

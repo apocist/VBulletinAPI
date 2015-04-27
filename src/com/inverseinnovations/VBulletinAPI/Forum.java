@@ -31,6 +31,7 @@ public class Forum{
 	protected int limitupper;
 	protected int daysprune;
 	protected ArrayList<Forum> subforums = new ArrayList<Forum>();//subforums and childforums are the same thing
+	protected ArrayList<ForumThread> threads = new ArrayList<ForumThread>();
 	/*activeusers={
 			1=[]
 	},*/
@@ -210,7 +211,10 @@ public class Forum{
 	public ArrayList<Forum> getSubForums() {
 		return new ArrayList<Forum>(subforums);
 	}
-
+	
+	public ArrayList<ForumThread> getThreads() {
+		return new ArrayList<ForumThread>(threads);
+	}
 	
 	/**Returns a Forum containing all the Forums within
 	 * @param response from callMethod
@@ -254,6 +258,18 @@ public class Forum{
 					else if(response2.get("forumbits") instanceof LinkedTreeMap){//multiple posts
 						LinkedTreeMap<String, Object> forumbit = (LinkedTreeMap<String, Object>) response2.get("forumbits");
 						this.subforums.add(new Forum().parseSub(forumbit));
+					}
+				}
+				if(response2.containsKey("threadbits")){
+					if(response2.get("threadbits") instanceof ArrayList){
+						ArrayList<LinkedTreeMap<String, Object>> threads = (ArrayList<LinkedTreeMap<String, Object>>) response2.get("threadbits");
+						for(LinkedTreeMap<String, Object> threadHolder : threads){
+							this.threads.add(new ForumThread().parseFromForum(threadHolder));
+						}
+					}
+					else if(response2.get("threadbits") instanceof LinkedTreeMap){
+						LinkedTreeMap<String, Object> thread = (LinkedTreeMap<String, Object>) response2.get("threadbits");
+						this.threads.add(new ForumThread().parseFromForum(thread));
 					}
 				}
 				Functions.responseErrorCheck(response);
@@ -311,6 +327,18 @@ public class Forum{
 					else if(forumdata.get("subforums") instanceof LinkedTreeMap){
 						LinkedTreeMap<String, Object> subforum = (LinkedTreeMap<String, Object>) forumdata.get("subforums");
 						this.subforums.add(new Forum().parseSub(subforum));
+					}
+				}
+				if(forumdata.containsKey("threadbits")){
+					if(forumdata.get("threadbits") instanceof ArrayList){
+						ArrayList<LinkedTreeMap<String, Object>> threads = (ArrayList<LinkedTreeMap<String, Object>>) forumdata.get("threadbits");
+						for(LinkedTreeMap<String, Object> threadHolder : threads){
+							this.threads.add(new ForumThread().parseFromForum(threadHolder));
+						}
+					}
+					else if(forumdata.get("threadbits") instanceof LinkedTreeMap){
+						LinkedTreeMap<String, Object> thread = (LinkedTreeMap<String, Object>) forumdata.get("threadbits");
+						this.threads.add(new ForumThread().parseFromForum(thread));
 					}
 				}
 			}

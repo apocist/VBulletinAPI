@@ -14,7 +14,7 @@ public class ForumThread{
 	protected int firstPage;//TODO this my not be named right...given 1 and 12 in a 12 post thread
 	protected int FIRSTPOSTID;
 	protected int forumid;
-	protected int lastPage;
+	protected int lastPage;//TODO may rename to 'totalpages'
 	protected int LASTPOSTID;
 	protected String meta_description;
 	protected int numberguest;
@@ -179,6 +179,53 @@ public class ForumThread{
 		if(VBulletinAPI.DEBUG){
 			System.out.println("thread all ->");
 			System.out.println(response.toString());
+		}
+		return this;
+	}
+	
+	/**Returns a Thread containing all the Posts within(or specified)
+	 * @param response from callMethod
+	 * @return
+	 * @throws InvalidId ThreadID missing or nonexistent
+	 * @throws NoPermissionLoggedout
+	 * @throws NoPermissionLoggedin
+	 * @throws VBulletinAPIException All generic or unknown errors
+	 */
+	@SuppressWarnings({ "unchecked" })
+	protected ForumThread parseFromForum(LinkedTreeMap<String, Object> threadbit) throws InvalidId, NoPermissionLoggedout, NoPermissionLoggedin, VBulletinAPIException{
+		if(threadbit != null){
+			if(threadbit.containsKey("thread")){
+				LinkedTreeMap<String, Object> threaddata = (LinkedTreeMap<String, Object>)threadbit.get("thread");
+				this.threadid = Functions.fetchInt(threaddata, "threadid");
+				this.title = Functions.fetchString(threaddata, "threadtitle");
+				//postusername=Banshis,
+				//postuserid=9461,
+				//status={new=new},
+				//moderatedprefix=,
+				//realthreadid=30235, //what? is the first one fake?
+				//rating=0.0,
+				//sticky=0,
+				//preview=Signups for MFM XXV &quot;The Frozen Throne&quot;
+				//threadiconpath=,
+				//threadicontitle=,
+				//typeprefix=,
+				//prefix_rich=,
+				//starttime=1424901319,
+				this.forumid = Functions.fetchInt(threaddata, "forumid");
+				//forumtitle=Signups,
+				//avatarurl=customavatars/thumbs/avatar2523_20.gif,
+				//pagenav=[]
+				this.lastPage = Functions.fetchInt(threaddata, "totalpages");
+				//lastpagelink=showthread.php/30235-MFM-XXV-The-Frozen-Throne-Signups/page5?s=f630816dc497846f06ef9d98e5c29a77,
+				//attach=0,
+				this.totalposts = Functions.fetchInt(threaddata, "replycount");
+				//views=298,
+				//lastposttime=1426274628,
+				//lastposterid=2523,
+				//lastposter=Lysergic,
+				this.LASTPOSTID = Functions.fetchInt(threaddata, "lastpostid");
+				//issubscribed=0
+			}
 		}
 		return this;
 	}
