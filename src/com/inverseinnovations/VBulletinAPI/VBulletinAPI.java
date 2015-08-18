@@ -25,6 +25,7 @@ import com.inverseinnovations.VBulletinAPI.Exception.*;
 public final class VBulletinAPI extends Thread{
 	final public static boolean DEBUG = true;
 	final public static double VERSION = 0.4;
+	final public int loopRequest = 4;//number of times to retry the api call
 
 	private String apiAccessToken;
 	private String apiClientID;
@@ -435,7 +436,7 @@ public final class VBulletinAPI extends Thread{
 			ForumHome forum = null;
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
-			if(loop < 4){//no infinite loop by user
+			if(loop <= loopRequest){//no infinite loop by user
 				try {
 					forum = new ForumHome().parse(callMethod("forum", params, true));
 				} catch (InvalidAccessToken e) {
@@ -500,7 +501,7 @@ public final class VBulletinAPI extends Thread{
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
 			params.put("forumid", forumid);
-			if(loop < 4){//no infinite loop by user
+			if(loop <= loopRequest){//no infinite loop by user
 				try {
 					forum = new Forum().parse(callMethod("forumdisplay", params, true));
 				} catch (InvalidAccessToken e) {
@@ -723,7 +724,7 @@ public final class VBulletinAPI extends Thread{
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
 			params.put("username", user);
-			if(loop < 4){//no infinite loop by user
+			if(loop <= loopRequest){//no infinite loop by user
 				try {
 					member = new Member().parse(callMethod("member", params, true));
 				} catch (InvalidAccessToken | NoPermissionLoggedout e) {
@@ -796,7 +797,7 @@ public final class VBulletinAPI extends Thread{
 			params.put("dateline", dateToDelete);
 			params.put("folderid", folderid);
 			errorMsg = parseResponse(callMethod("private_confirmemptyfolder", params, true));
-			if(loop < 4){//no infinite loop by user
+			if(loop <= loopRequest){//no infinite loop by user
 				if(errorMsg != null){
 					if(errorMsg.equals("pm_messagesdeleted")){//success
 						return true;
@@ -839,7 +840,7 @@ public final class VBulletinAPI extends Thread{
 			ArrayList<Message> msgList = new ArrayList<Message>();
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
-			if(loop < 4){//no infinite loop by user
+			if(loop <= loopRequest){//no infinite loop by user
 				try {
 					msgList = parseMessages(callMethod("private_messagelist", params, true));
 					/*for(Message msg: msgList){//TODO should not need to grab the 
@@ -914,7 +915,7 @@ public final class VBulletinAPI extends Thread{
 			params.put("recipients", user);
 			if(signature){params.put("signature", "1");}else{params.put("signature", "0");}
 			errorMsg = parseResponse(callMethod("private_insertpm", params, true));
-			if(loop < 4){//no infinite loop by user
+			if(loop <= loopRequest){//no infinite loop by user
 				if(errorMsg != null){
 					if(errorMsg.equals("pm_messagesent")){
 						return true;
@@ -976,7 +977,7 @@ public final class VBulletinAPI extends Thread{
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
 			params.put("pmid", pmId);
-			if(loop < 4){//no infinite loop by user
+			if(loop <= loopRequest){//no infinite loop by user
 				try {
 					message = new Message().parse(callMethod("private_showpm", params, true));
 				} catch (InvalidAccessToken e) {
@@ -1066,7 +1067,7 @@ public final class VBulletinAPI extends Thread{
 			params.put("message", message);
 			if(signature){params.put("signature", "1");}else{params.put("signature", "0");}
 			errorMsg = parseResponse(callMethod("editpost_updatepost", params, true));
-			if(loop < 4){
+			if(loop <= loopRequest){
 				if(errorMsg != null){
 					if(errorMsg.equals("redirect_editthanks")){//success
 						return true;
@@ -1154,7 +1155,7 @@ public final class VBulletinAPI extends Thread{
 			params.put("message", message);
 			if(signature){params.put("signature", "1");}else{params.put("signature", "0");}
 			errorMsg = parseResponse(callMethod("newreply_postreply", params, true));
-			if(loop < 4){
+			if(loop <= loopRequest){
 				if(errorMsg != null){
 					if(Functions.isInteger(errorMsg.substring(0, 1))){//success
 						if(errorMsg.contains(" ")){
@@ -1338,7 +1339,7 @@ public final class VBulletinAPI extends Thread{
 			HashMap<String, String> params = new HashMap<String, String>();
 			params.put("threadid", threadid);
 			errorMsg = parseResponse(callMethod("inlinemod_close", params, true));
-			if(loop < 4){//no infinite loop by user
+			if(loop <= loopRequest){//no infinite loop by user
 				if(errorMsg != null){
 					if(errorMsg.length() > 0){
 						if(errorMsg.equals("something...need success")){//success//TODO need the success result....
@@ -1413,7 +1414,7 @@ public final class VBulletinAPI extends Thread{
 			HashMap<String, String> params = new HashMap<String, String>();
 			params.put("threadid", threadid);
 			errorMsg = parseResponse(callMethod("inlinemod_dodeletethreads", params, true));
-			if(loop < 4){//no infinite loop by user
+			if(loop <= loopRequest){//no infinite loop by user
 				if(errorMsg != null){
 					if(errorMsg.length() > 0){
 						if(errorMsg.equals("something...need success")){//success//TODO need the success result....
@@ -1529,7 +1530,7 @@ public final class VBulletinAPI extends Thread{
 			params.put("message", message);
 			if(signature){params.put("signature", "1");}else{params.put("signature", "0");}
 			errorMsg = parseResponse(callMethod("newthread_postthread", params, true));
-			if(loop < 4){//no infinite loop by user
+			if(loop <= loopRequest){//no infinite loop by user
 				if(errorMsg != null){
 					if(errorMsg.length() > 0){
 						if(Functions.isInteger(errorMsg.substring(0, 1))){//success
@@ -1615,7 +1616,7 @@ public final class VBulletinAPI extends Thread{
 			HashMap<String, String> params = new HashMap<String, String>();
 			params.put("threadid", threadid);
 			errorMsg = parseResponse(callMethod("inlinemod_open", params, true));
-			if(loop < 4){//no infinite loop by user
+			if(loop <= loopRequest){//no infinite loop by user
 				if(errorMsg != null){
 					if(errorMsg.length() > 0){
 						if(errorMsg.equals("something...need success")){//success//TODO need the success result....
@@ -1723,7 +1724,7 @@ public final class VBulletinAPI extends Thread{
 			if(postid != null){params.put("p", postid);}
 			if(page != null){params.put("page", page);}
 			if(perpage != null){params.put("perpage", perpage);}
-			if(loop < 4){//no infinite loop by user
+			if(loop <= loopRequest){//no infinite loop by user
 				try {
 					thread = new ForumThread().parse(callMethod("showthread", params, true));
 				} catch (InvalidAccessToken e) {
