@@ -25,7 +25,7 @@ import com.inverseinnovations.VBulletinAPI.Exception.*;
 public final class VBulletinAPI extends Thread{
 	final public static boolean DEBUG = true;
 	final public static double VERSION = 0.4;
-	final public int loopRequest = 4;//number of times to retry the api call
+	final public int loopRequest = 2;//number of times to retry the api call
 
 	private String apiAccessToken;
 	private String apiClientID;
@@ -345,36 +345,64 @@ public final class VBulletinAPI extends Thread{
 	 *             If the URL is wrong, or a connection is unable to be made for
 	 *             whatever reason.
 	 */
-	private LinkedTreeMap<String, Object> callMethod(String methodname,Map<String, String> params, boolean sign){// throws IOException{
+	private LinkedTreeMap<String, Object> callMethod(String methodname, Map<String, String> params, boolean sign){// throws IOException{
 		LinkedTreeMap<String, Object> map = new LinkedTreeMap<String, Object>();
 
 		try{
 
-			StringBuffer queryStringBuffer = new StringBuffer("api_m=" + methodname);
+			/*StringBuffer queryStringBuffer = new StringBuffer("api_m=" + methodname);
 			SortedSet<String> keys = new TreeSet<String>(params.keySet());
 			for (String key : keys) {// ' " \ are unsafe
 				String value = Functions.querySafeString(params.get(key));
 				queryStringBuffer.append("&" + key + "=" + URLEncoder.encode(value, "UTF-8"));
-			}
-			if (sign) {
+			}*/
+			/*if (sign) {
 				queryStringBuffer.append("&api_sig="+ Functions.MD5( (queryStringBuffer.toString() + getAPIAccessToken()+ apiClientID + getSecret() + getAPIkey())).toLowerCase());
 				if(DEBUG){System.out.println("encoded: "+queryStringBuffer.toString());}
+			}*/
+			
+			params.put("api_m", methodname);
+			params.put("api_c", apiClientID);
+			params.put("api_s", getAPIAccessToken());
+			
+			if (sign) {
+				//queryStringBuffer.append("&api_sig="+ Functions.MD5( (getAPIAccessToken()+ apiClientID + getSecret() + getAPIkey())).toLowerCase());
+				params.put("api_sig", Functions.MD5( (getAPIAccessToken()+ apiClientID + getSecret() + getAPIkey())).toLowerCase());
+				System.out.println("api_sig: "+Functions.MD5( (getAPIAccessToken()+ apiClientID + getSecret() + getAPIkey())).toLowerCase());
+				//if(DEBUG){System.out.println("encoded: "+queryStringBuffer.toString());}
 			}
+			System.out.println("api_m:"+methodname+" api_s:"+getAPIAccessToken()+" api_c:"+apiClientID+" secret:"+getSecret()+" apiKey:"+getAPIkey());
+			
+			StringBuilder postData = new StringBuilder();
+	        for (Map.Entry<String,String> param : params.entrySet()) {
+	            if (postData.length() != 0) postData.append('&');
+	            postData.append(URLEncoder.encode(param.getKey(), "UTF-8"));
+	            postData.append('=');
+	            postData.append(URLEncoder.encode(String.valueOf(param.getValue()), "UTF-8"));
+	        }
+	        byte[] postDataBytes = postData.toString().getBytes("UTF-8");
+		
+	        System.out.println(postData.toString());
+			
 
-			queryStringBuffer.append("&api_c=" + apiClientID);
+			/*queryStringBuffer.append("&api_c=" + apiClientID);
 			queryStringBuffer.append("&api_s=" + getAPIAccessToken());
 			String queryString = queryStringBuffer.toString();
 			queryString = queryString.replace(" ", "%20");
-			URL apiUrl = new URL(apiURL + "?" + queryString);
+			URL apiUrl = new URL(apiURL + "?" + queryString);*/
+			URL apiUrl = new URL(apiURL);
 			HttpURLConnection conn = (HttpURLConnection) apiUrl.openConnection();
 			conn.setRequestMethod("POST");
+			conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+	        conn.setRequestProperty("Content-Length", String.valueOf(postDataBytes.length));
 
 			conn.setConnectTimeout(10000); //set timeout to 10 seconds
 			conn.setReadTimeout(10000);//set timeout to 10 seconds
 			conn.setDoOutput(true);
 			conn.setDoInput(true);
-			DataOutputStream out = new DataOutputStream(conn.getOutputStream());
-			out.writeBytes(queryString);
+			/*DataOutputStream out = new DataOutputStream(conn.getOutputStream());
+			out.writeBytes(queryString);*/
+	        conn.getOutputStream().write(postDataBytes);
 			InputStream is = null;
 			try{
 				is = conn.getInputStream();
