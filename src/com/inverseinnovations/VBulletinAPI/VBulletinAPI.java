@@ -1,6 +1,6 @@
 package com.inverseinnovations.VBulletinAPI;
 
-import java.io.DataOutputStream;
+//import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -12,8 +12,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.SortedSet;
-import java.util.TreeSet;
+//import java.util.SortedSet;
+//import java.util.TreeSet;
 
 import com.google.gson.Gson;					//Copyright 2008-2011 Google Inc. http://www.apache.org/licenses/LICENSE-2.0
 import com.google.gson.internal.LinkedTreeMap;	//Copyright 2008-2011 Google Inc. http://www.apache.org/licenses/LICENSE-2.0
@@ -23,7 +23,7 @@ import com.inverseinnovations.VBulletinAPI.Exception.*;
 
 /** A class to provide an easy to use wrapper around the vBulletin REST API.*/
 public final class VBulletinAPI extends Thread{
-	final public static boolean DEBUG = true;
+	final public static boolean DEBUG = false;
 	final public static double VERSION = 0.4;
 	final public int loopRequest = 2;//number of times to retry the api call
 
@@ -331,6 +331,7 @@ public final class VBulletinAPI extends Thread{
 		this.setPassword(password);
 		this.start();
 	}
+	
 	/**
 	 * Calls a method through the API.
 	 *
@@ -345,33 +346,36 @@ public final class VBulletinAPI extends Thread{
 	 *             If the URL is wrong, or a connection is unable to be made for
 	 *             whatever reason.
 	 */
-	private LinkedTreeMap<String, Object> callMethod(String methodname, Map<String, String> params, boolean sign){// throws IOException{
+	private LinkedTreeMap<String, Object> callMethod(String methodname, Map<String, String> params, boolean sign){
+		return callMethod(methodname, params, null, sign);
+	}
+	
+	/**
+	 * Calls a method through the API.
+	 *
+	 * @param methodname
+	 *            the name of the method to call
+	 * @param params
+	 *            the parameters as a map
+	 * @param sign
+	 *            if the request should be signed or not. Generally, you want this to be true
+	 * @return the array returned by the server
+	 * @throws IOException
+	 *             If the URL is wrong, or a connection is unable to be made for
+	 *             whatever reason.
+	 */
+	private LinkedTreeMap<String, Object> callMethod(String methodname, Map<String, String> params, Map<String, String> cookies, boolean sign){// throws IOException{
 		LinkedTreeMap<String, Object> map = new LinkedTreeMap<String, Object>();
 
 		try{
-
-			/*StringBuffer queryStringBuffer = new StringBuffer("api_m=" + methodname);
-			SortedSet<String> keys = new TreeSet<String>(params.keySet());
-			for (String key : keys) {// ' " \ are unsafe
-				String value = Functions.querySafeString(params.get(key));
-				queryStringBuffer.append("&" + key + "=" + URLEncoder.encode(value, "UTF-8"));
-			}*/
-			/*if (sign) {
-				queryStringBuffer.append("&api_sig="+ Functions.MD5( (queryStringBuffer.toString() + getAPIAccessToken()+ apiClientID + getSecret() + getAPIkey())).toLowerCase());
-				if(DEBUG){System.out.println("encoded: "+queryStringBuffer.toString());}
-			}*/
 			
 			params.put("api_m", methodname);
 			params.put("api_c", apiClientID);
 			params.put("api_s", getAPIAccessToken());
 			
 			if (sign) {
-				//queryStringBuffer.append("&api_sig="+ Functions.MD5( (getAPIAccessToken()+ apiClientID + getSecret() + getAPIkey())).toLowerCase());
 				params.put("api_sig", Functions.MD5( (getAPIAccessToken()+ apiClientID + getSecret() + getAPIkey())).toLowerCase());
-				System.out.println("api_sig: "+Functions.MD5( (getAPIAccessToken()+ apiClientID + getSecret() + getAPIkey())).toLowerCase());
-				//if(DEBUG){System.out.println("encoded: "+queryStringBuffer.toString());}
 			}
-			System.out.println("api_m:"+methodname+" api_s:"+getAPIAccessToken()+" api_c:"+apiClientID+" secret:"+getSecret()+" apiKey:"+getAPIkey());
 			
 			StringBuilder postData = new StringBuilder();
 	        for (Map.Entry<String,String> param : params.entrySet()) {
@@ -381,18 +385,24 @@ public final class VBulletinAPI extends Thread{
 	            postData.append(URLEncoder.encode(String.valueOf(param.getValue()), "UTF-8"));
 	        }
 	        byte[] postDataBytes = postData.toString().getBytes("UTF-8");
-		
-	        System.out.println(postData.toString());
-			
-
-			/*queryStringBuffer.append("&api_c=" + apiClientID);
-			queryStringBuffer.append("&api_s=" + getAPIAccessToken());
-			String queryString = queryStringBuffer.toString();
-			queryString = queryString.replace(" ", "%20");
-			URL apiUrl = new URL(apiURL + "?" + queryString);*/
+	        
+	        StringBuilder cookieData = null;
+	        if(cookies != null){
+	        	cookieData = new StringBuilder();
+		        for (Map.Entry<String,String> cookie : cookies.entrySet()) {
+		            if (cookieData.length() != 0) cookieData.append("; ");
+		            cookieData.append(URLEncoder.encode(cookie.getKey(), "UTF-8"));
+		            cookieData.append('=');
+		            cookieData.append(URLEncoder.encode(String.valueOf(cookie.getValue()), "UTF-8"));
+		        }
+	        }
+	        
 			URL apiUrl = new URL(apiURL);
 			HttpURLConnection conn = (HttpURLConnection) apiUrl.openConnection();
 			conn.setRequestMethod("POST");
+			if(cookieData != null){
+				conn.setRequestProperty("Cookie", cookieData.toString());
+			}
 			conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 	        conn.setRequestProperty("Content-Length", String.valueOf(postDataBytes.length));
 
@@ -400,8 +410,6 @@ public final class VBulletinAPI extends Thread{
 			conn.setReadTimeout(10000);//set timeout to 10 seconds
 			conn.setDoOutput(true);
 			conn.setDoInput(true);
-			/*DataOutputStream out = new DataOutputStream(conn.getOutputStream());
-			out.writeBytes(queryString);*/
 	        conn.getOutputStream().write(postDataBytes);
 			InputStream is = null;
 			try{
@@ -1365,8 +1373,9 @@ public final class VBulletinAPI extends Thread{
 			String errorMsg = null;
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
-			params.put("threadid", threadid);
-			errorMsg = parseResponse(callMethod("inlinemod_close", params, true));
+			HashMap<String, String> cookies = new HashMap<String, String>();
+			cookies.put("vbulletin_inlinethread", threadid);
+			errorMsg = parseResponse(callMethod("inlinemod_close", params, cookies, true));
 			if(loop <= loopRequest){//no infinite loop by user
 				if(errorMsg != null){
 					if(errorMsg.length() > 0){
@@ -1440,8 +1449,9 @@ public final class VBulletinAPI extends Thread{
 			String errorMsg = null;
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
-			params.put("threadid", threadid);
-			errorMsg = parseResponse(callMethod("inlinemod_dodeletethreads", params, true));
+			HashMap<String, String> cookies = new HashMap<String, String>();
+			cookies.put("vbulletin_inlinethread", threadid);
+			errorMsg = parseResponse(callMethod("inlinemod_dodeletethreads", params, cookies, true));
 			if(loop <= loopRequest){//no infinite loop by user
 				if(errorMsg != null){
 					if(errorMsg.length() > 0){
@@ -1642,8 +1652,9 @@ public final class VBulletinAPI extends Thread{
 			String errorMsg = null;
 			loop++;
 			HashMap<String, String> params = new HashMap<String, String>();
-			params.put("threadid", threadid);
-			errorMsg = parseResponse(callMethod("inlinemod_open", params, true));
+			HashMap<String, String> cookies = new HashMap<String, String>();
+			cookies.put("vbulletin_inlinethread", threadid);
+			errorMsg = parseResponse(callMethod("inlinemod_open", params, cookies, true));
 			if(loop <= loopRequest){//no infinite loop by user
 				if(errorMsg != null){
 					if(errorMsg.length() > 0){
